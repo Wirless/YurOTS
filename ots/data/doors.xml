@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<doors>
+<door level="10" x="163" y="59" z="7"/>
+<door level="99999999" x="165" y="59" z="7"/>
+</doors>

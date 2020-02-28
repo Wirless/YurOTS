@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<experience_stages>
+<stage maxlvl="34" exp="4"/>
+<stage minlvl="35" maxlvl="36" exp="3"/>
+<stage minlvl="37" maxlvl="40" exp="2"/>
+<stage minlvl="99" exp="1"/>
+</experience_stages>

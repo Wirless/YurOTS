@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<pvp_stages>
+    <pvp maxLvl="49"/>
+    <pvp minLvl="50" maxLvl="99"/>
+    <pvp minLvl="100" maxLvl="149"/>
+    <pvp minLvl="150"/>
+</pvp_stages>
