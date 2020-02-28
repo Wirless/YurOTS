@@ -1,0 +1,1079 @@
+[Project]
+FileName=Stonehenge OTS.dev
+Name=Stonehenge OTS
+UnitCount=103
+Type=1
+Ver=1
+ObjFiles=
+Includes="C:\Dev-Cpp\others\LUA 5.1\include";C:\Dev-Cpp\include\c++\3.4.2;C:\Dev-Cpp\include;C:\Dev-Cpp\others\REGEX\lib
+Libs=C:\Dev-Cpp\bin;"C:\Dev-Cpp\others\LUA 5.1\lib";C:\Dev-Cpp\lib
+PrivateResource=Sentinels_of_Darkness_private.rc
+ResourceIncludes=
+MakeIncludes=
+Compiler=
+CppCompiler=-DTLM_BUY_SELL _@@_-DTLM_SERVER_SAVE _@@_-DTLM_HOUSE_SYSTEM _@@_-DBDB_UTEVO_LUX _@@_-DWOLV_LOAD_NPC _@@_-DBD_HOUSE_WINDOW _@@_-DTR_ANTI_AFK _@@_-DELEM_VIP_LIST _@@_-DTR_SUMMONS _@@_-DTRS_GM_INVISIBLE _@@_-DTLM_SKULLS_PARTY _@@_-DBRN_EXIVA _@@_-DSD_BURST_ARROW _@@_-DBDB_REPLACE_SPEARS _@@_-DBD_ITEM_LOOK _@@_-DSM_RELOAD_CONFIG _@@_-DJD_DEATH_LIST _@@_-DCT_EXANI_TERA _@@_-DCVS_DAY_CYCLE _@@_-DTJ_MONSTER_BLOOD _@@_-DJD_WANDS _@@_-D__DEBUG_PLAYERS__ _@@_-DYUR_CVS_MODS _@@_-DYUR_ICE_RAPIER _@@_-DYUR_AOL _@@_-DYUR_LOGIN_QUEUE _@@_-DYUR_MULTIPLIERS _@@_-DYUR_BOH _@@_-DYUR_NPC_EXT _@@_-DYUR_GUILD_SYSTEM _@@_-DYUR_CMD_EXT _@@_-DYUR_ITEM_EXT _@@_-DYUR_ACT_EXT _@@_-DYUR_NO_MONSTER_HEAL _@@_-DYUR_PVP_ARENA _@@_-DYUR_RINGS_AMULETS _@@_-DYUR_CONFIG_CAP _@@_-DYUR_FIGHT_MODE _@@_-DYUR_READABLES _@@_-DYUR_LEARN_SPELLS _@@_-DYUR_HEAL_EXHAUST _@@_-DYUR_SHUTDOWN _@@_-DYUR_ROOKGARD _@@_-DYUR_LIGHT_ITEM _@@_-DYUR_CLEAN_MAP _@@_-DYUR_GM_LOOK _@@_-DYUR_HIGH_LEVELS _@@_-DYUR_PREMIUM_PROMOTION _@@_-DYUR_INVISIBLE _@@_-DYUR_DRAINS _@@_-DRUL_DRUNK _@@_-DCTRL_Y _@@_-DTLM_BEDS _@@_-DKICK_PLAYER _@@_-DSDG_VIOLATIONS _@@_-DGOLD_BOLT _@@_-DJIDDO_RAID _@@_-DREX_MUTED _@@_-D_REX_CVS_MOD_ _@@_-DCHANGE_SEX_@@_-DGM_OUT_@@_-DZDEJMIJ_RS_@@_-D__KIRO_AKT___@@_-D__Xaro_ANTY_LURE___@@_-DBD_CONDITION_@@_-DSELECT_TARGET_@@_-D__KIRO_NPCYELL___@@_-D_BDD_REPUTACJA__@@_-DARNE_LUCK_@@_-DBLESS_@@_-DSMYG_GETWRITER_@@_-DNPC_TURNING_@@_-DCHAOS_GMMC_@@_-DDT_PREMMY_@@_-DPALL_REQ_LVL_@@_-DBD_FOLLOW_@@_-DADD_TELEPORT_@@_-DSAPPHIRE_EXANAPOX_@@_-DEXANI_HUR_@@_-DLOOSIK_STACKABLES_@@_-DRUL_WALKTO_@@_-D_NG_BBK_PVPARENA_FIX___@@_-DUCB_SUSPEND_SYSTEM_@@_-DEOTSERV_SERVER_SAVE_@@_-D_BBK_ANIM_TEXT_@@_-DANTY_DDOS_@@_-D_BBK_CODE__@@_-D_NG_BBK_VIP_SYSTEM___@@_-DCREA_VOC_MAXMLEV_@@_-D_BBK_AUTOBOARDCASTER_@@_-DBUY_HOUSE_@@_-D_REX_CVS_MOD__@@_-DCAYAN_SUMMONS_@@_-DTILES_WORK_@@_-DFIX_REX_@@_-DTR_PLACE_CREATURE_FIX_@@_-DSTAIRS_FIX_@@_-D__EXCEPTION_TRACER___@@_-DBD_DOWN_@@_-DWALLS_FIX_@@_-DON_TILE_@@_-DMOVE_PLAYER_@@_-DGET_ITEM_@@_-DGET_SLOT_@@_-DCTRL_Z_@@_-DPARCEL_FLOOR_@@_-DMOVE_UP_@@_-DEXANA_ANI_@@_-DEXETA_RES_@@_-DCAYAN_SPELLBOOK_@@_-DTIJN_SHIP_@@_-DCHAMELEON_@@_-DWILD_GROWTH_@@_-DTIJN_WILDCARD_@@_-DCAYAN_POISONMELEE_@@_-DCAYAN_POISONARROW_@@_-DFIXY_@@_-DHUCZU_EXHAUSTED_@@_-DSPEED_FIX_@@_-D_BBK_KIED_LIGHT_SPELLS__@@_-D_BDD_LUA_FIX_@@_-D_KIRO_CRASHER_FIX_@@_
+Linker=-lwsock32_@@_-s_@@_-llibxml2_@@_-llua_@@_-llualib_@@_-lwsock32_@@_-Wl,-Map=otserv.map_@@_-llibboost_regex-mgw-mt-s-1_33_1_@@_C:/Dev-Cpp/bin/libxml2.dll_@@_C:/Dev-Cpp/bin/lua5.dll_@@_C:/Dev-Cpp/bin/lualib5.dll_@@_
+IsCpp=1
+Icon=Stonehenge OTS.ico
+ExeOutput=
+ObjectOutput=
+OverrideOutput=1
+OverrideOutputName=Stonehenge OTS.exe
+HostApplication=
+Folders=
+CommandLine=
+UseCustomMakefile=0
+CustomMakefile=
+IncludeVersionInfo=0
+SupportXPThemes=0
+CompilerSet=0
+CompilerSettings=0000000000000000000000
+
+[Unit1]
+FileName=..\container.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit2]
+FileName=..\creature.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit3]
+FileName=..\creature.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit4]
+FileName=..\definitions.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit5]
+FileName=..\exception.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit6]
+FileName=..\exception.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit7]
+FileName=..\fileloader.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit8]
+FileName=..\fileloader.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit9]
+FileName=..\game.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit10]
+FileName=..\game.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit11]
+FileName=..\guilds.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit12]
+FileName=..\guilds.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit13]
+FileName=..\houses.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit14]
+FileName=..\houses.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit15]
+FileName=..\ioaccount.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit16]
+FileName=..\ioaccount.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit17]
+FileName=..\ioaccountxml.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit18]
+FileName=..\ioaccountxml.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit19]
+FileName=..\iomap.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit20]
+FileName=..\iomapbin.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit21]
+FileName=..\iomapbin.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit22]
+FileName=..\iomapotbm.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit23]
+FileName=..\iomapotbm.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit24]
+FileName=..\iomapxml.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit25]
+FileName=..\iomapxml.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit26]
+FileName=..\ioplayer.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit27]
+FileName=..\ioplayer.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit28]
+FileName=..\ioplayerxml.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit29]
+FileName=..\ioplayerxml.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit30]
+FileName=..\item.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit31]
+FileName=..\item.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit32]
+FileName=..\itemloader.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit33]
+FileName=..\itemloader.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit34]
+FileName=..\items.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit35]
+FileName=..\items.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit36]
+FileName=..\logger.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit37]
+FileName=..\logger.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit38]
+FileName=..\loginqueue.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit39]
+FileName=..\loginqueue.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit40]
+FileName=..\luascript.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit41]
+FileName=..\luascript.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit42]
+FileName=..\magic.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit43]
+FileName=..\magic.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit44]
+FileName=..\map.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit45]
+FileName=..\map.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit46]
+FileName=..\md5.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit47]
+FileName=..\md5.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit48]
+FileName=..\mdump.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit49]
+FileName=..\mdump.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit50]
+FileName=..\monster.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit51]
+FileName=..\monster.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit52]
+FileName=..\monsters.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit53]
+FileName=..\monsters.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit54]
+FileName=..\networkmessage.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit55]
+FileName=..\networkmessage.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit56]
+FileName=..\npc.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit57]
+FileName=..\npc.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit58]
+FileName=..\otserv.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit59]
+FileName=..\otsystem.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit60]
+FileName=..\player.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit61]
+FileName=..\player.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit62]
+FileName=..\position.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit63]
+FileName=..\position.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit64]
+FileName=..\protocol.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit65]
+FileName=..\protocol.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit66]
+FileName=..\protocol76.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit67]
+FileName=..\protocol76.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit68]
+FileName=..\pvparena.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit69]
+FileName=..\pvparena.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit70]
+FileName=..\readables.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit71]
+FileName=..\readables.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit72]
+FileName=..\safe_atoi.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit73]
+FileName=..\scheduler.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit74]
+FileName=..\scheduler.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit75]
+FileName=..\spawn.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit76]
+FileName=..\spawn.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit77]
+FileName=..\spells.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit78]
+FileName=..\spells.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit79]
+FileName=..\status.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit80]
+FileName=..\status.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit81]
+FileName=..\summons.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit82]
+FileName=..\summons.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit83]
+FileName=..\tasks.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit84]
+FileName=..\templates.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit85]
+FileName=..\texcept.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit86]
+FileName=..\thing.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit87]
+FileName=..\thing.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit88]
+FileName=..\tile.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit89]
+FileName=..\tile.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit90]
+FileName=..\tools.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit91]
+FileName=..\tools.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit92]
+FileName=..\account.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit93]
+FileName=..\account.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit94]
+FileName=..\actions.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit95]
+FileName=..\actions.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit96]
+FileName=..\allocator.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit97]
+FileName=..\allocator.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit98]
+FileName=..\chat.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit99]
+FileName=..\chat.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit100]
+FileName=..\commands.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit101]
+FileName=..\commands.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit102]
+FileName=..\const76.h
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit103]
+FileName=..\container.cpp
+CompileCpp=1
+Folder=Sentinels of Darkness
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[VersionInfo]
+Major=0
+Minor=1
+Release=1
+Build=1
+LanguageID=1033
+CharsetID=1252
+CompanyName=
+FileVersion=
+FileDescription=Developed using the Dev-C++ IDE
+InternalName=
+LegalCopyright=
+LegalTrademarks=
+OriginalFilename=
+ProductName=
+ProductVersion=
+AutoIncBuildNr=0
+

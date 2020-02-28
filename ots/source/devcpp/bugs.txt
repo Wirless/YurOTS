@@ -1,0 +1,47 @@
+bugs?
+-----
+-DCAYAN_POISONMELEE
+
+-D__MIZIAK_ADDS__
+
+
+//anty monster kill monster
+_NG_BBK_PVP__
+
+onAttackedCreature
+
+0x9ff2f4  Item::serialize()(0x479234)
+0x9ff5d4  Monster::doAttacks(Creature*, monstermode_t)(0x4a30af)
+0x9ff6b0  Game::creatureYell(Creature*, std::string&)(0x423332)
+0x9ff6c8  NpcScript::luaGetPlayerGuildStatus(lua_State*)(0x4b388d)
+0x9ffa84  MonsterType::createLootContainer(Container*, LootBlock const&)(0x4a5b9c)
+0x9ffad8  Monster::getDistancePosition(Position const&, int const&, bool, Position&)(0x49fcfd)
+0x9ffb84  Monsters::loadFromXml(std::string const&, bool)(0x4a5e9e)
+0x9ffc24  Items::loadFromOtb(std::string)(0x47e83f)
+0x9ffd08  Game::CreateManaDamageUpdate(Creature*, Creature*, int)(0x42d55b)
+0x9083378  Protocol76::parseGM(NetworkMessage&)(0x4edf61)
+0x90833f0  Protocol76::sendThingMove(Creature const*, slots_t, Item const*, int, Container const*, unsigned char, Item const*, int, int)(0x4e263f)
+0x9085014  Game::Game()(0x40c837)
+0x9085794  Game::creatureMakeDamage(Creature*, Creature*, fight_t)(0x42743e)
+0x9085878  Game::creatureMakeDamage(Creature*, Creature*, fight_t)(0x426f12)
+0x9085f64  str(int)(0x504c30)
+0x9085f84  Map::getPathTo(Creature*, Position, Position, bool, bool, int)(0x49b39d)
+0x9085fb4  Map::clean()(0x49c2a1)
+0x9086014  Map::clean()(0x49c226)
+0x9086134  Monster::getDistancePosition(Position const&, int const&, bool, Position&)(0x4a00c8)
+0x9086188  Monster::getDistancePosition(Position const&, int const&, bool, Position&)(0x4a008b)
+0x9086414  Map::clean()(0x49bec8)
+0x9086474  Game::checkPlayerWalkTo(unsigned long)(0x44d0ba)
+0x90864d0  Game::getDestinationPos(Player*)(0x44cf33)
+0x9086564  Game::Game()(0x40c837)
+0x9086c24  Game::creatureChangeOutfit(Creature*)(0x422a4b)
+0x9087034  Actions::Actions(Game*)(0x50554b)
+0x90870d8  Game::canTeleportItem(Player*, unsigned short, Position, Position, int, unsigned char)(0x4520e1)
+0x90871f4  Actions::loadFromXml(std::string const&)(0x505ddb)
+0x9087234  Game::creatureSay(Creature*, SpeakClasses, std::string const&)(0x41e7b8)
+0x9087254  str(int)(0x504b5b)
+0x9087384  Game::setSpellbookText(Player*, Item*)(0x453eb3)
+0x9087410  Game::setSpellbookText(Player*, Item*)(0x453d31)
+0x9087448  Game::onPrepareMoveThing(Creature*, Thing const*, Tile const*, Tile const*, int)(0x411845)
+0x90874d0  Game::creatureTurn(Creature*, Direction)(0x41dc5e)
+0x9087724  Game::sendUpdateThing(Player*, Position const&, Thing const*, unsigned char)(0x4369c2)

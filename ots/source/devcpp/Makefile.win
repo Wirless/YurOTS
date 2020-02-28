@@ -1,177 +1,174 @@
-# Project: otserv
+# Project: Stonehenge OTS
 # Makefile created by Dev-C++ 4.9.9.2
 
 CPP  = g++.exe
 CC   = gcc.exe
 WINDRES = windres.exe
-RES  = obj/otserv_private.res
-OBJ  = obj/aac.o obj/account.o obj/actions.o obj/allocator.o obj/builtinaac.o obj/chat.o obj/commands.o obj/container.o obj/creature.o obj/exception.o obj/fileloader.o obj/game.o obj/guilds.o obj/houses.o obj/ioaccount.o obj/ioaccountxml.o obj/iomapbin.o obj/iomapotbm.o obj/iomapxml.o obj/ioplayer.o obj/ioplayerxml.o obj/item.o obj/itemloader.o obj/items.o obj/logger.o obj/loginqueue.o obj/luascript.o obj/magic.o obj/map.o obj/md5.o obj/monster.o obj/monsters.o obj/networkmessage.o obj/npc.o obj/otserv.o obj/player.o obj/position.o obj/protocol.o obj/protocol76.o obj/pvparena.o obj/readables.o obj/scheduler.o obj/spawn.o obj/spells.o obj/status.o obj/summons.o obj/thing.o obj/tile.o obj/tools.o $(RES)
-LINKOBJ  = obj/aac.o obj/account.o obj/actions.o obj/allocator.o obj/builtinaac.o obj/chat.o obj/commands.o obj/container.o obj/creature.o obj/exception.o obj/fileloader.o obj/game.o obj/guilds.o obj/houses.o obj/ioaccount.o obj/ioaccountxml.o obj/iomapbin.o obj/iomapotbm.o obj/iomapxml.o obj/ioplayer.o obj/ioplayerxml.o obj/item.o obj/itemloader.o obj/items.o obj/logger.o obj/loginqueue.o obj/luascript.o obj/magic.o obj/map.o obj/md5.o obj/monster.o obj/monsters.o obj/networkmessage.o obj/npc.o obj/otserv.o obj/player.o obj/position.o obj/protocol.o obj/protocol76.o obj/pvparena.o obj/readables.o obj/scheduler.o obj/spawn.o obj/spells.o obj/status.o obj/summons.o obj/thing.o obj/tile.o obj/tools.o $(RES)
-LIBS =  -L"C:/Dev-Cpp/lib" -L"C:/Dev-Cpp/lib" -lwsock32 -s -Wl,-Map=otserv.map -llibboost_regex-mgw-mt-s-1_33_1 C:/Dev-Cpp/bin/libxml2.dll C:/Dev-Cpp/bin/lua5.dll C:/Dev-Cpp/bin/lualib5.dll  
-INCS =  -I"C:/Dev-Cpp/include"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include" 
-CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include" 
-BIN  = YurOTS.exe
-CXXFLAGS = $(CXXINCS) -DEXCEPTION_TRACER -DTLM_BUY_SELL -DTLM_SERVER_SAVE -DTLM_HOUSE_SYSTEM -DBDB_UTEVO_LUX -DWOLV_LOAD_NPC -DBD_HOUSE_WINDOW -DTR_ANTI_AFK -DELEM_VIP_LIST -DTR_SUMMONS -DTRS_GM_INVISIBLE -DTLM_SKULLS_PARTY -DBRN_EXIVA -DSD_BURST_ARROW -DBDB_REPLACE_SPEARS -DBD_ITEM_LOOK -DSM_RELOAD_CONFIG -DJD_DEATH_LIST -DCT_EXANI_TERA -DCVS_DAY_CYCLE -DTJ_MONSTER_BLOOD -DJD_WANDS -D__DEBUG_PLAYERS__ -DYUR_CVS_MODS -DYUR_ICE_RAPIER -DYUR_AOL -DYUR_LOGIN_QUEUE -DYUR_MULTIPLIERS -DYUR_BOH -DYUR_NPC_EXT -DYUR_GUILD_SYSTEM -DYUR_CMD_EXT -DYUR_ITEM_EXT -DYUR_ACT_EXT -DYUR_NO_MONSTER_HEAL -DYUR_PVP_ARENA -DYUR_RINGS_AMULETS -DYUR_CONFIG_CAP -DYUR_FIGHT_MODE -DYUR_READABLES -DYUR_LEARN_SPELLS -DYUR_HEAL_EXHAUST -DYUR_SHUTDOWN -DYUR_ROOKGARD -DYUR_LIGHT_ITEM -DYUR_CLEAN_MAP -DYUR_GM_LOOK -DYUR_HIGH_LEVELS -DYUR_PREMIUM_PROMOTION -DYUR_INVISIBLE -DYUR_DRAINS -DYUR_BUILTIN_AAC   -fexpensive-optimizations -O3
-CFLAGS = $(INCS)   -fexpensive-optimizations -O3
+RES  = Sentinels_of_Darkness_private.res
+OBJ  = ../creature.o ../exception.o ../fileloader.o ../game.o ../guilds.o ../houses.o ../ioaccount.o ../ioaccountxml.o ../iomapbin.o ../iomapotbm.o ../iomapxml.o ../ioplayer.o ../ioplayerxml.o ../item.o ../itemloader.o ../items.o ../logger.o ../loginqueue.o ../luascript.o ../magic.o ../map.o ../md5.o ../mdump.o ../monster.o ../monsters.o ../networkmessage.o ../npc.o ../otserv.o ../player.o ../position.o ../protocol.o ../protocol76.o ../pvparena.o ../readables.o ../scheduler.o ../spawn.o ../spells.o ../status.o ../summons.o ../thing.o ../tile.o ../tools.o ../account.o ../actions.o ../allocator.o ../chat.o ../commands.o ../container.o $(RES)
+LINKOBJ  = ../creature.o ../exception.o ../fileloader.o ../game.o ../guilds.o ../houses.o ../ioaccount.o ../ioaccountxml.o ../iomapbin.o ../iomapotbm.o ../iomapxml.o ../ioplayer.o ../ioplayerxml.o ../item.o ../itemloader.o ../items.o ../logger.o ../loginqueue.o ../luascript.o ../magic.o ../map.o ../md5.o ../mdump.o ../monster.o ../monsters.o ../networkmessage.o ../npc.o ../otserv.o ../player.o ../position.o ../protocol.o ../protocol76.o ../pvparena.o ../readables.o ../scheduler.o ../spawn.o ../spells.o ../status.o ../summons.o ../thing.o ../tile.o ../tools.o ../account.o ../actions.o ../allocator.o ../chat.o ../commands.o ../container.o $(RES)
+LIBS =  -L"C:/Dev-Cpp/lib" -L"C:/Dev-Cpp/bin" -L"C:/Dev-Cpp/others/LUA 5.1/lib" -L"C:/Dev-Cpp/lib" -lwsock32 -s -llibxml2 -llua -llualib -lwsock32 -Wl,-Map=otserv.map -llibboost_regex-mgw-mt-s-1_33_1 C:/Dev-Cpp/bin/libxml2.dll C:/Dev-Cpp/bin/lua5.dll C:/Dev-Cpp/bin/lualib5.dll  
+INCS =  -I"C:/Dev-Cpp/include"  -I"C:/Dev-Cpp/others/LUA 5.1/include"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"C:/Dev-Cpp/others/REGEX/lib" 
+CXXINCS =  -I"C:/Dev-Cpp/lib/gcc/mingw32/3.4.2/include"  -I"C:/Dev-Cpp/include/c++/3.4.2/backward"  -I"C:/Dev-Cpp/include/c++/3.4.2/mingw32"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"C:/Dev-Cpp/others/LUA 5.1/include"  -I"C:/Dev-Cpp/include/c++/3.4.2"  -I"C:/Dev-Cpp/include"  -I"C:/Dev-Cpp/others/REGEX/lib" 
+BIN  = "Stonehenge OTS.exe"
+CXXFLAGS = $(CXXINCS) -DTLM_BUY_SELL  -DTLM_SERVER_SAVE  -DTLM_HOUSE_SYSTEM  -DBDB_UTEVO_LUX  -DWOLV_LOAD_NPC  -DBD_HOUSE_WINDOW  -DTR_ANTI_AFK  -DELEM_VIP_LIST  -DTR_SUMMONS  -DTRS_GM_INVISIBLE  -DTLM_SKULLS_PARTY  -DBRN_EXIVA  -DSD_BURST_ARROW  -DBDB_REPLACE_SPEARS  -DBD_ITEM_LOOK  -DSM_RELOAD_CONFIG  -DJD_DEATH_LIST  -DCT_EXANI_TERA  -DCVS_DAY_CYCLE  -DTJ_MONSTER_BLOOD  -DJD_WANDS  -D__DEBUG_PLAYERS__  -DYUR_CVS_MODS  -DYUR_ICE_RAPIER  -DYUR_AOL  -DYUR_LOGIN_QUEUE  -DYUR_MULTIPLIERS  -DYUR_BOH  -DYUR_NPC_EXT  -DYUR_GUILD_SYSTEM  -DYUR_CMD_EXT  -DYUR_ITEM_EXT  -DYUR_ACT_EXT  -DYUR_NO_MONSTER_HEAL  -DYUR_PVP_ARENA  -DYUR_RINGS_AMULETS  -DYUR_CONFIG_CAP  -DYUR_FIGHT_MODE  -DYUR_READABLES  -DYUR_LEARN_SPELLS  -DYUR_HEAL_EXHAUST  -DYUR_SHUTDOWN  -DYUR_ROOKGARD  -DYUR_LIGHT_ITEM  -DYUR_CLEAN_MAP  -DYUR_GM_LOOK  -DYUR_HIGH_LEVELS  -DYUR_PREMIUM_PROMOTION  -DYUR_INVISIBLE  -DYUR_DRAINS  -DRUL_DRUNK  -DCTRL_Y  -DTLM_BEDS  -DKICK_PLAYER  -DSDG_VIOLATIONS  -DGOLD_BOLT  -DJIDDO_RAID  -DREX_MUTED  -D_REX_CVS_MOD_  -DCHANGE_SEX -DGM_OUT -DZDEJMIJ_RS -D__KIRO_AKT__ -D__Xaro_ANTY_LURE__ -DBD_CONDITION -DSELECT_TARGET -D__KIRO_NPCYELL__ -D_BDD_REPUTACJA_ -DARNE_LUCK -DBLESS -DSMYG_GETWRITER -DNPC_TURNING -DCHAOS_GMMC -DDT_PREMMY -DPALL_REQ_LVL -DBD_FOLLOW -DADD_TELEPORT -DSAPPHIRE_EXANAPOX -DEXANI_HUR -DLOOSIK_STACKABLES -DRUL_WALKTO -D_NG_BBK_PVPARENA_FIX__ -DUCB_SUSPEND_SYSTEM -DEOTSERV_SERVER_SAVE -D_BBK_ANIM_TEXT -DANTY_DDOS -D_BBK_CODE_ -D_NG_BBK_VIP_SYSTEM__ -DCREA_VOC_MAXMLEV -D_BBK_AUTOBOARDCASTER -DBUY_HOUSE -D_REX_CVS_MOD_ -DCAYAN_SUMMONS -DTILES_WORK -DFIX_REX -DTR_PLACE_CREATURE_FIX -DSTAIRS_FIX -D__EXCEPTION_TRACER__ -DBD_DOWN -DWALLS_FIX -DON_TILE -DMOVE_PLAYER -DGET_ITEM -DGET_SLOT -DCTRL_Z -DPARCEL_FLOOR -DMOVE_UP -DEXANA_ANI -DEXETA_RES -DCAYAN_SPELLBOOK -DTIJN_SHIP -DCHAMELEON -DWILD_GROWTH -DTIJN_WILDCARD -DCAYAN_POISONMELEE -DCAYAN_POISONARROW -DFIXY -DHUCZU_EXHAUSTED -D__BBK_CHECK_HOUSES_ -DSPEED_FIX -D_BBK_KIED_LIGHT_SPELLS_ -D_BDD_LUA_FIX   
+CFLAGS = $(INCS)  
 RM = rm -f
 
 .PHONY: all all-before all-after clean clean-custom
 
-all: all-before YurOTS.exe all-after
+all: all-before "Stonehenge OTS.exe" all-after
 
 
 clean: clean-custom
 	${RM} $(OBJ) $(BIN)
 
 $(BIN): $(OBJ)
-	$(CPP) $(LINKOBJ) -o "YurOTS.exe" $(LIBS)
+	$(CPP) $(LINKOBJ) -o "Stonehenge OTS.exe" $(LIBS)
 
-obj/aac.o: ../aac.cpp
-	$(CPP) -c ../aac.cpp -o obj/aac.o $(CXXFLAGS)
+../creature.o: ../creature.cpp
+	$(CPP) -c ../creature.cpp -o ../creature.o $(CXXFLAGS)
 
-obj/account.o: ../account.cpp
-	$(CPP) -c ../account.cpp -o obj/account.o $(CXXFLAGS)
+../exception.o: ../exception.cpp
+	$(CPP) -c ../exception.cpp -o ../exception.o $(CXXFLAGS)
 
-obj/actions.o: ../actions.cpp
-	$(CPP) -c ../actions.cpp -o obj/actions.o $(CXXFLAGS)
+../fileloader.o: ../fileloader.cpp
+	$(CPP) -c ../fileloader.cpp -o ../fileloader.o $(CXXFLAGS)
 
-obj/allocator.o: ../allocator.cpp
-	$(CPP) -c ../allocator.cpp -o obj/allocator.o $(CXXFLAGS)
+../game.o: ../game.cpp
+	$(CPP) -c ../game.cpp -o ../game.o $(CXXFLAGS)
 
-obj/builtinaac.o: ../builtinaac.cpp
-	$(CPP) -c ../builtinaac.cpp -o obj/builtinaac.o $(CXXFLAGS)
+../guilds.o: ../guilds.cpp
+	$(CPP) -c ../guilds.cpp -o ../guilds.o $(CXXFLAGS)
 
-obj/chat.o: ../chat.cpp
-	$(CPP) -c ../chat.cpp -o obj/chat.o $(CXXFLAGS)
+../houses.o: ../houses.cpp
+	$(CPP) -c ../houses.cpp -o ../houses.o $(CXXFLAGS)
 
-obj/commands.o: ../commands.cpp
-	$(CPP) -c ../commands.cpp -o obj/commands.o $(CXXFLAGS)
+../ioaccount.o: ../ioaccount.cpp
+	$(CPP) -c ../ioaccount.cpp -o ../ioaccount.o $(CXXFLAGS)
 
-obj/container.o: ../container.cpp
-	$(CPP) -c ../container.cpp -o obj/container.o $(CXXFLAGS)
+../ioaccountxml.o: ../ioaccountxml.cpp
+	$(CPP) -c ../ioaccountxml.cpp -o ../ioaccountxml.o $(CXXFLAGS)
 
-obj/creature.o: ../creature.cpp
-	$(CPP) -c ../creature.cpp -o obj/creature.o $(CXXFLAGS)
+../iomapbin.o: ../iomapbin.cpp
+	$(CPP) -c ../iomapbin.cpp -o ../iomapbin.o $(CXXFLAGS)
 
-obj/exception.o: ../exception.cpp
-	$(CPP) -c ../exception.cpp -o obj/exception.o $(CXXFLAGS)
+../iomapotbm.o: ../iomapotbm.cpp
+	$(CPP) -c ../iomapotbm.cpp -o ../iomapotbm.o $(CXXFLAGS)
 
-obj/fileloader.o: ../fileloader.cpp
-	$(CPP) -c ../fileloader.cpp -o obj/fileloader.o $(CXXFLAGS)
+../iomapxml.o: ../iomapxml.cpp
+	$(CPP) -c ../iomapxml.cpp -o ../iomapxml.o $(CXXFLAGS)
 
-obj/game.o: ../game.cpp
-	$(CPP) -c ../game.cpp -o obj/game.o $(CXXFLAGS)
+../ioplayer.o: ../ioplayer.cpp
+	$(CPP) -c ../ioplayer.cpp -o ../ioplayer.o $(CXXFLAGS)
 
-obj/guilds.o: ../guilds.cpp
-	$(CPP) -c ../guilds.cpp -o obj/guilds.o $(CXXFLAGS)
+../ioplayerxml.o: ../ioplayerxml.cpp
+	$(CPP) -c ../ioplayerxml.cpp -o ../ioplayerxml.o $(CXXFLAGS)
 
-obj/houses.o: ../houses.cpp
-	$(CPP) -c ../houses.cpp -o obj/houses.o $(CXXFLAGS)
+../item.o: ../item.cpp
+	$(CPP) -c ../item.cpp -o ../item.o $(CXXFLAGS)
 
-obj/ioaccount.o: ../ioaccount.cpp
-	$(CPP) -c ../ioaccount.cpp -o obj/ioaccount.o $(CXXFLAGS)
+../itemloader.o: ../itemloader.cpp
+	$(CPP) -c ../itemloader.cpp -o ../itemloader.o $(CXXFLAGS)
 
-obj/ioaccountxml.o: ../ioaccountxml.cpp
-	$(CPP) -c ../ioaccountxml.cpp -o obj/ioaccountxml.o $(CXXFLAGS)
+../items.o: ../items.cpp
+	$(CPP) -c ../items.cpp -o ../items.o $(CXXFLAGS)
 
-obj/iomapbin.o: ../iomapbin.cpp
-	$(CPP) -c ../iomapbin.cpp -o obj/iomapbin.o $(CXXFLAGS)
+../logger.o: ../logger.cpp
+	$(CPP) -c ../logger.cpp -o ../logger.o $(CXXFLAGS)
 
-obj/iomapotbm.o: ../iomapotbm.cpp
-	$(CPP) -c ../iomapotbm.cpp -o obj/iomapotbm.o $(CXXFLAGS)
+../loginqueue.o: ../loginqueue.cpp
+	$(CPP) -c ../loginqueue.cpp -o ../loginqueue.o $(CXXFLAGS)
 
-obj/iomapxml.o: ../iomapxml.cpp
-	$(CPP) -c ../iomapxml.cpp -o obj/iomapxml.o $(CXXFLAGS)
+../luascript.o: ../luascript.cpp
+	$(CPP) -c ../luascript.cpp -o ../luascript.o $(CXXFLAGS)
 
-obj/ioplayer.o: ../ioplayer.cpp
-	$(CPP) -c ../ioplayer.cpp -o obj/ioplayer.o $(CXXFLAGS)
+../magic.o: ../magic.cpp
+	$(CPP) -c ../magic.cpp -o ../magic.o $(CXXFLAGS)
 
-obj/ioplayerxml.o: ../ioplayerxml.cpp
-	$(CPP) -c ../ioplayerxml.cpp -o obj/ioplayerxml.o $(CXXFLAGS)
+../map.o: ../map.cpp
+	$(CPP) -c ../map.cpp -o ../map.o $(CXXFLAGS)
 
-obj/item.o: ../item.cpp
-	$(CPP) -c ../item.cpp -o obj/item.o $(CXXFLAGS)
+../md5.o: ../md5.cpp
+	$(CPP) -c ../md5.cpp -o ../md5.o $(CXXFLAGS)
 
-obj/itemloader.o: ../itemloader.cpp
-	$(CPP) -c ../itemloader.cpp -o obj/itemloader.o $(CXXFLAGS)
+../mdump.o: ../mdump.cpp
+	$(CPP) -c ../mdump.cpp -o ../mdump.o $(CXXFLAGS)
 
-obj/items.o: ../items.cpp
-	$(CPP) -c ../items.cpp -o obj/items.o $(CXXFLAGS)
+../monster.o: ../monster.cpp
+	$(CPP) -c ../monster.cpp -o ../monster.o $(CXXFLAGS)
 
-obj/logger.o: ../logger.cpp
-	$(CPP) -c ../logger.cpp -o obj/logger.o $(CXXFLAGS)
+../monsters.o: ../monsters.cpp
+	$(CPP) -c ../monsters.cpp -o ../monsters.o $(CXXFLAGS)
 
-obj/loginqueue.o: ../loginqueue.cpp
-	$(CPP) -c ../loginqueue.cpp -o obj/loginqueue.o $(CXXFLAGS)
+../networkmessage.o: ../networkmessage.cpp
+	$(CPP) -c ../networkmessage.cpp -o ../networkmessage.o $(CXXFLAGS)
 
-obj/luascript.o: ../luascript.cpp
-	$(CPP) -c ../luascript.cpp -o obj/luascript.o $(CXXFLAGS)
+../npc.o: ../npc.cpp
+	$(CPP) -c ../npc.cpp -o ../npc.o $(CXXFLAGS)
 
-obj/magic.o: ../magic.cpp
-	$(CPP) -c ../magic.cpp -o obj/magic.o $(CXXFLAGS)
+../otserv.o: ../otserv.cpp
+	$(CPP) -c ../otserv.cpp -o ../otserv.o $(CXXFLAGS)
 
-obj/map.o: ../map.cpp
-	$(CPP) -c ../map.cpp -o obj/map.o $(CXXFLAGS)
+../player.o: ../player.cpp
+	$(CPP) -c ../player.cpp -o ../player.o $(CXXFLAGS)
 
-obj/md5.o: ../md5.cpp
-	$(CPP) -c ../md5.cpp -o obj/md5.o $(CXXFLAGS)
+../position.o: ../position.cpp
+	$(CPP) -c ../position.cpp -o ../position.o $(CXXFLAGS)
 
-obj/monster.o: ../monster.cpp
-	$(CPP) -c ../monster.cpp -o obj/monster.o $(CXXFLAGS)
+../protocol.o: ../protocol.cpp
+	$(CPP) -c ../protocol.cpp -o ../protocol.o $(CXXFLAGS)
 
-obj/monsters.o: ../monsters.cpp
-	$(CPP) -c ../monsters.cpp -o obj/monsters.o $(CXXFLAGS)
+../protocol76.o: ../protocol76.cpp
+	$(CPP) -c ../protocol76.cpp -o ../protocol76.o $(CXXFLAGS)
 
-obj/networkmessage.o: ../networkmessage.cpp
-	$(CPP) -c ../networkmessage.cpp -o obj/networkmessage.o $(CXXFLAGS)
+../pvparena.o: ../pvparena.cpp
+	$(CPP) -c ../pvparena.cpp -o ../pvparena.o $(CXXFLAGS)
 
-obj/npc.o: ../npc.cpp
-	$(CPP) -c ../npc.cpp -o obj/npc.o $(CXXFLAGS)
+../readables.o: ../readables.cpp
+	$(CPP) -c ../readables.cpp -o ../readables.o $(CXXFLAGS)
 
-obj/otserv.o: ../otserv.cpp
-	$(CPP) -c ../otserv.cpp -o obj/otserv.o $(CXXFLAGS)
+../scheduler.o: ../scheduler.cpp
+	$(CPP) -c ../scheduler.cpp -o ../scheduler.o $(CXXFLAGS)
 
-obj/player.o: ../player.cpp
-	$(CPP) -c ../player.cpp -o obj/player.o $(CXXFLAGS)
+../spawn.o: ../spawn.cpp
+	$(CPP) -c ../spawn.cpp -o ../spawn.o $(CXXFLAGS)
 
-obj/position.o: ../position.cpp
-	$(CPP) -c ../position.cpp -o obj/position.o $(CXXFLAGS)
+../spells.o: ../spells.cpp
+	$(CPP) -c ../spells.cpp -o ../spells.o $(CXXFLAGS)
 
-obj/protocol.o: ../protocol.cpp
-	$(CPP) -c ../protocol.cpp -o obj/protocol.o $(CXXFLAGS)
+../status.o: ../status.cpp
+	$(CPP) -c ../status.cpp -o ../status.o $(CXXFLAGS)
 
-obj/protocol76.o: ../protocol76.cpp
-	$(CPP) -c ../protocol76.cpp -o obj/protocol76.o $(CXXFLAGS)
+../summons.o: ../summons.cpp
+	$(CPP) -c ../summons.cpp -o ../summons.o $(CXXFLAGS)
 
-obj/pvparena.o: ../pvparena.cpp
-	$(CPP) -c ../pvparena.cpp -o obj/pvparena.o $(CXXFLAGS)
+../thing.o: ../thing.cpp
+	$(CPP) -c ../thing.cpp -o ../thing.o $(CXXFLAGS)
 
-obj/readables.o: ../readables.cpp
-	$(CPP) -c ../readables.cpp -o obj/readables.o $(CXXFLAGS)
+../tile.o: ../tile.cpp
+	$(CPP) -c ../tile.cpp -o ../tile.o $(CXXFLAGS)
 
-obj/scheduler.o: ../scheduler.cpp
-	$(CPP) -c ../scheduler.cpp -o obj/scheduler.o $(CXXFLAGS)
+../tools.o: ../tools.cpp
+	$(CPP) -c ../tools.cpp -o ../tools.o $(CXXFLAGS)
 
-obj/spawn.o: ../spawn.cpp
-	$(CPP) -c ../spawn.cpp -o obj/spawn.o $(CXXFLAGS)
+../account.o: ../account.cpp
+	$(CPP) -c ../account.cpp -o ../account.o $(CXXFLAGS)
 
-obj/spells.o: ../spells.cpp
-	$(CPP) -c ../spells.cpp -o obj/spells.o $(CXXFLAGS)
+../actions.o: ../actions.cpp
+	$(CPP) -c ../actions.cpp -o ../actions.o $(CXXFLAGS)
 
-obj/status.o: ../status.cpp
-	$(CPP) -c ../status.cpp -o obj/status.o $(CXXFLAGS)
+../allocator.o: ../allocator.cpp
+	$(CPP) -c ../allocator.cpp -o ../allocator.o $(CXXFLAGS)
 
-obj/summons.o: ../summons.cpp
-	$(CPP) -c ../summons.cpp -o obj/summons.o $(CXXFLAGS)
+../chat.o: ../chat.cpp
+	$(CPP) -c ../chat.cpp -o ../chat.o $(CXXFLAGS)
 
-obj/thing.o: ../thing.cpp
-	$(CPP) -c ../thing.cpp -o obj/thing.o $(CXXFLAGS)
+../commands.o: ../commands.cpp
+	$(CPP) -c ../commands.cpp -o ../commands.o $(CXXFLAGS)
 
-obj/tile.o: ../tile.cpp
-	$(CPP) -c ../tile.cpp -o obj/tile.o $(CXXFLAGS)
+../container.o: ../container.cpp
+	$(CPP) -c ../container.cpp -o ../container.o $(CXXFLAGS)
 
-obj/tools.o: ../tools.cpp
-	$(CPP) -c ../tools.cpp -o obj/tools.o $(CXXFLAGS)
-
-obj/otserv_private.res: otserv_private.rc 
-	$(WINDRES) -i otserv_private.rc --input-format=rc -o obj/otserv_private.res -O coff 
+Sentinels_of_Darkness_private.res: Sentinels_of_Darkness_private.rc 
+	$(WINDRES) -i Sentinels_of_Darkness_private.rc --input-format=rc -o Sentinels_of_Darkness_private.res -O coff 

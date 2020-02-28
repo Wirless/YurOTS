@@ -1,0 +1,86 @@
+void Game::checkDecay(int t)
+{
+	OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::checkDecay()");
+
+	addEvent(makeTask(DECAY_INTERVAL, boost::bind(&Game::checkDecay,this,DECAY_INTERVAL)));
+
+	list<decayBlock*>::iterator it;
+	for(it = decayVector.begin();it != decayVector.end();){
+		(*it)->decayTime -= t;
+//bbkowner
+		if((*it)->decayTime <= 80000){
+			list<Item*>::iterator it22;
+			for(it22 = (*it)->decayItems.begin(); it22 != (*it)->decayItems.end(); it22++){
+				Item* item = *it22;
+//if(item->getOwnerTime() == 1){
+//item->setOwnerTime(0);
+//}
+				if(item->getOwner() != ""){
+				item->setOwner("");
+                 item->setOwnerTime(1);
+                 return;
+            }
+        }
+    }
+//bbkowner
+		if((*it)->decayTime <= 0){
+			list<Item*>::iterator it2;
+			for(it2 = (*it)->decayItems.begin(); it2 != (*it)->decayItems.end(); it2++){
+				/*todo: Decaying item could be in a  container carried by a player,
+				should all items have a pointer to their parent (like containers)?*/
+				Item* item = *it2;
+				item->isDecaying = false;
+				if(item->canDecay()){
+					if(item->pos.x != 0xFFFF){
+						Tile *tile = map->getTile(item->pos);
+						if(tile){
+							Position pos = item->pos;
+							Item* newitem = item->decay();
+
+							if(newitem){
+								int stackpos = tile->getThingStackPos(item);
+								if(newitem == item){
+									sendUpdateThing(NULL,pos,newitem,stackpos);
+								}
+								else{
+									if(tile->removeThing(item)){
+										//autoclose containers
+										if(dynamic_cast<Container*>(item)){
+											SpectatorVec list;
+											SpectatorVec::iterator it;
+
+											getSpectators(Range(pos, true), list);
+
+											for(it = list.begin(); it != list.end(); ++it) {
+												Player* spectator = dynamic_cast<Player*>(*it);
+												if(spectator)
+													spectator->onThingRemove(item);
+											}
+										}
+
+										tile->insertThing(newitem, stackpos);
+										sendUpdateThing(NULL,pos,newitem,stackpos);
+										FreeThing(item);
+									}
+								}
+								startDecay(newitem);
+							}
+							else{
+								if(removeThing(NULL,pos,item)){
+									FreeThing(item);
+								}
+							}//newitem
+						}//tile
+					}//pos != 0xFFFF
+				}//item->canDecay()
+				FreeThing(item);
+			}//for it2
+			delete *it;
+			it = decayVector.erase(it);
+		}//(*it)->decayTime <= 0
+		else{
+			it++;
+		}
+	}//for it
+
+	flushSendBuffers();
