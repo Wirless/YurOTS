@@ -53,7 +53,9 @@ public:
     pz     = false;
     splash = NULL;
 		ground = NULL;
-
+#ifdef PARCEL_FLOOR		
+		zItem            = 0;
+#endif //PARCEL_FLOOR
 #ifdef TLM_HOUSE_SYSTEM
 	house = NULL;
 #endif //TLM_HOUSE_SYSTEM
@@ -68,7 +70,9 @@ public:
   ItemVector     topItems;
   CreatureVector creatures;
   ItemVector     downItems;
-
+#ifdef PARCEL_FLOOR 
+  unsigned char  zItem;
+#endif //PARCEL_FLOOR
 #ifdef TLM_HOUSE_SYSTEM
 	bool isHouse() const;
 	House* getHouse() const;
@@ -90,6 +94,7 @@ public:
 #endif //YUR_CVS_MODS
 
   bool removeThing(Thing *thing);
+  bool hasItem(unsigned long id) const;
   void addThing(Thing *thing);
 	bool insertThing(Thing *thing, int stackpos);
 	MagicEffectItem* getFieldItem();

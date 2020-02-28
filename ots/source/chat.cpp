@@ -20,6 +20,9 @@
 
 #include "chat.h"
 #include "player.h"
+#include "game.h"
+#include <sstream>
+extern Game g_game;
 
 ChatChannel::ChatChannel(unsigned short channelId, std::string channelName)
 {
@@ -49,18 +52,37 @@ bool ChatChannel::removeUser(Player *player)
 	
 bool ChatChannel::talk(Player *fromPlayer, SpeakClasses type, std::string &text, unsigned short channelId)
 {
-	bool success = false;
-	UsersMap::iterator it;
-	
-	for(it = m_users.begin(); it != m_users.end(); ++it){
-		Player *toPlayer = dynamic_cast<Player*>(it->second);
-		if(toPlayer){
-			toPlayer->sendToChannel(fromPlayer, type, text, channelId);
-			success = true;
-		}
-	}
-	return success;
-}
+    bool success = false;
+    UsersMap::iterator it;
+    std::stringstream nazwaGracza;
+    
+    if (channelId == 0x05){
+        if (fromPlayer->access <= 2){          
+            if (fromPlayer->vocation == VOCATION_NONE)
+                nazwaGracza << "[Rookgard] [" << fromPlayer->getLevel() << "]: " << text;
+            else
+                nazwaGracza << "[Mainland] [" << fromPlayer->getLevel() << "]: " << text;
+        }
+        else{
+            nazwaGracza << "[" << fromPlayer->getLevel() << "]: " << text;
+        }
+    }
+    else{
+        nazwaGracza << "[" << fromPlayer->getLevel() << "]: " << text;
+    }       
+
+//        std::stringstream t;
+//        t << "[" << fromPlayer->getLevel() << "] " << text;
+    
+    for(it = m_users.begin(); it != m_users.end(); ++it){
+        Player *toPlayer = dynamic_cast<Player*>(it->second);
+        if(toPlayer){
+            toPlayer->sendToChannel(fromPlayer, type, nazwaGracza.str(), channelId);
+            success = true;
+        }
+    }
+    return success;
+}  
 
 Chat::Chat()
 {
@@ -82,6 +104,23 @@ Chat::Chat()
 	newChannel = new ChatChannel(0x07, "Help");
 	if(newChannel)
 		m_normalChannels[0x07] = newChannel;
+
+newChannel = new ChatChannel(0x08, "Server Log");
+    if(newChannel)
+        m_normalChannels[0x08] = newChannel;
+#ifdef SDG_VIOLATIONS		
+	newChannel = new ChatChannel(0x01, "GameMaster");
+	if(newChannel)
+		m_normalChannels[0x01] = newChannel;
+
+	newChannel = new ChatChannel(0x02, "Counsellor");
+	if(newChannel)
+		m_normalChannels[0x02] = newChannel;
+		
+	newChannel = new ChatChannel(0x03, "Rule Violations");
+	if(newChannel)
+		m_normalChannels[0x03] = newChannel;
+#endif
 }
 
 ChatChannel *Chat::createChannel(Player *player, unsigned short channelId)
@@ -122,6 +161,13 @@ bool Chat::addUserToChannel(Player *player, unsigned short channelId)
 	if(!channel)
 		return false;
 		
+#ifdef SDG_VIOLATIONS
+    if ((channelId == 0x01 && player->access < 3)   // gm channel - edit to your gm access
+        ||(channelId == 0x02 && player->access < 2) // counsellor - edit access as needed
+        ||(channelId == 0x03 && player->access < 2))// violations - edit as needed
+        return false;
+#endif
+		
 	if(channel->addUser(player))
 		return true;
 	else
@@ -153,14 +199,88 @@ void Chat::removeUserFromAllChannels(Player *player)
 	
 bool Chat::talkToChannel(Player *player, SpeakClasses type, std::string &text, unsigned short channelId)
 {
-	ChatChannel *channel = getChannel(player, channelId);
-	if(!channel)
-		return false;
-		
-	if(channel->talk(player, type, text, channelId))
-		return true;
-	else
-		return false;
+ ChatChannel *channel = getChannel(player, channelId);
+ if(!channel)
+  return false;
+  
+ if(channelId == 0x08)
+        return false;
+  
+ if(player && player->level < 30 && channel->getName() == "Trade")
+ {
+        player->sendCancel("Tylko gracze z level-em 30 lub wyzszym moga pisac swoje oferty na Trade channel.");
+        return false;
+    }
+ else if(player && player->level < 20 && channel->getName() == "Game-Chat" && player->gameTicks > 0)
+ {
+        player->sendCancel("Tylko gracze z level-em 20 lub wyzszym moga rozmawiac na Game-Chat.");
+        return false;
+    }
+ 
+ if(player->access == 0)
+ {
+          if(channel->getName() == "Game-Chat")
+             
+          {
+             if (player->gameTicks > 0)
+             {
+             int secondsleft0 = player->gameTicks / 1000;
+             std::stringstream ss;
+             ss << "Musisz poczekac " << secondsleft0 << " sekund, aby wyslac nastepna wiadomosc na Game-Chat.";
+             player->sendCancel(ss.str().c_str());
+             return false;
+             }
+             else
+             {
+               if(channel->talk(player, type, text, channelId))
+               {
+                   if (channel->getName() == "Game-Chat")
+                      player->gameTicks = 7000;
+                      return true;
+                   }
+                   else
+                   return false;
+             }    
+          }
+          else if(channel->getName() == "Trade") 
+          
+          {
+             if(player->tradeTicks > 0)
+             {
+             int secondsleft1 = player->tradeTicks / 1000;
+             std::stringstream ss;
+             ss << "Musisz poczekac " << secondsleft1 << " sekund, aby wyslac nastepna oferte na Trade channel.";
+             player->sendCancel(ss.str().c_str());
+             return false;
+             }                                                    
+             else
+             {
+                if(channel->talk(player, type, text, channelId))
+                {
+                if (channel->getName() == "Trade")
+                    player->tradeTicks = 120000;
+                    return true;
+                }
+                else
+                return false;
+             }
+          }
+}
+  
+ if(player->access > 2)
+ {
+         if(channel->talk(player, SPEAK_CHANNEL_R1, text, channelId))
+             return true;
+         else
+       return false;
+    }
+    else if(player->access > 0 || player->access < 3){
+    if(channel->talk(player, SPEAK_CHANNEL_O, text, channelId))
+             return true;
+         else
+         
+       return false;
+}
 }
 	
 std::string Chat::getChannelName(Player *player, unsigned short channelId)
@@ -178,7 +298,11 @@ ChannelList Chat::getChannelList(Player *player)
 	NormalChannelMap::iterator itn;
 		
 	// If has guild
+#ifdef FIXY
+	if(player->guildStatus >= GUILD_MEMBER && player->getGuildName().length()){
+#else
 	if(player->getGuildId() && player->getGuildName().length()){
+#endif //FIXY
 		ChatChannel *channel = getChannel(player, 0x00);
 		if(channel)
 			list.push_back(channel);
@@ -189,6 +313,13 @@ ChannelList Chat::getChannelList(Player *player)
 	for(itn = m_normalChannels.begin(); itn != m_normalChannels.end(); ++itn){
 		//TODO: Permisions for channels and checks
 		ChatChannel *channel = itn->second;
+#ifdef SDG_VIOLATIONS
+        if (itn->first <= 0x03)
+            if ((itn->first == 0x01 && player->access < 3)  // gm channel
+            || (itn->first == 0x02 && player->access < 2)   // couns channel
+            || (itn->first == 0x03 && player->access < 2)   // violations
+            ) continue;
+#endif
 		list.push_back(channel);
 	}
 	return list;
@@ -196,6 +327,10 @@ ChannelList Chat::getChannelList(Player *player)
 
 ChatChannel *Chat::getChannel(Player *player, unsigned short channelId)
 {
+            #ifdef VITOR_RVR_HANDLING
+if(channelId < 0x50)
+{
+#endif
 	if(channelId == 0x00){	
 		GuildChannelMap::iterator it = m_guildChannels.find(player->getGuildId());
 		if(it == m_guildChannels.end())
@@ -210,4 +345,20 @@ ChatChannel *Chat::getChannel(Player *player, unsigned short channelId)
 				
 		return it->second;
 	}
+	#ifdef VITOR_RVR_HANDLING
 }
+else
+{
+if(player->access < g_config.ACCESS_REPORT)
+return NULL;
+
+for(ChannelList::iterator it = UnhandledRVRs.begin(); it != UnhandledRVRs.end(); it++) // We should add only unhandled channels
+{
+if((*it)->getId() == channelId)
+return (*it);
+}
+}
+#endif
+}
+
+

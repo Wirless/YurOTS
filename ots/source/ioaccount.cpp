@@ -56,10 +56,9 @@ bool IOAccount::getPassword(unsigned long accno, const std::string &name, std::s
 {
 	return false;
 }
-
-#ifdef YUR_BUILTIN_AAC
-bool IOAccount::saveAccount(const Account& account)
+#ifdef DT_PREMMY
+bool IOAccount::saveAccount(Account acc)
 {
-	return false;
+    return false;
 }
-#endif //YUR_BUILTIN_AAC
+#endif //DT_PREMMY

@@ -17,7 +17,7 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 //////////////////////////////////////////////////////////////////////
-
+#include <fstream>
 
 #include "definitions.h"
 
@@ -26,7 +26,7 @@
 #include <sstream>
 #include <time.h>
 #include <list>
-#include <limits>
+
 #include "networkmessage.h"
 #include "protocol76.h"
 
@@ -39,6 +39,8 @@
 #include "chat.h"
 
 #include <stdio.h>
+//#include <iostream>
+//#include <sstream>
 
 #include "luascript.h"
 
@@ -46,6 +48,8 @@
 #include "actions.h"
 #include "game.h"
 #include "ioplayer.h"
+
+#include <fstream>     
 
 extern LuaScript g_config;
 extern Actions actions;
@@ -62,7 +66,7 @@ Protocol76::Protocol76(SOCKET s)
 
 Protocol76::~Protocol76()
 {
-	OTSYS_THREAD_LOCKVARRELEASE(bufferLock);
+	OTSYS_THREAD_LOCKVARRELEASE(bufferLock);	
 }
 
 void Protocol76::reinitializeProtocol()
@@ -80,11 +84,11 @@ bool Protocol76::ConnectPlayer(int* placeInQueue)
 }
 #else //YUR_LOGIN_QUEUE
 bool Protocol76::ConnectPlayer()
-{
+{	
 	Status* stat = Status::instance();
 	if(!stat->hasSlot() && player->access == 0)
 		return false;
-	else
+	else                    
 		return game->placeCreature(player->pos, player);
 }
 #endif //YUR_LOGIN_QUEUE
@@ -96,7 +100,7 @@ void Protocol76::ReceiveLoop()
 		while(pendingLogout == false && msg.ReadFromSocket(s)){
 			parsePacket(msg);
 		}
-
+		
 		if(s){
 			closesocket(s);
 			s = 0;
@@ -122,116 +126,151 @@ void Protocol76::parsePacket(NetworkMessage &msg)
 {
 	if(msg.getMessageLength() <= 0)
 		return;
-
 	uint8_t recvbyte = msg.GetByte();
-	//a dead player can not performs actions
-	if (player->isRemoved == true && recvbyte != 0x14) {
-		OTSYS_SLEEP(10);
-		return;
-	}
+#ifdef FIXY
+	if(msg.getMessageLength() >= 1000 && recvbyte == 0x8A)
+       return;
+#endif //FIXY
+ //a dead player can not performs actions
+ if (player->isRemoved == true && recvbyte != 0x14 || player->frozen != 0) {
+  OTSYS_SLEEP(10);
+  return;
+ }	
+	
+if(msg.getMessageLength() >= 950 && recvbyte == 0x8A){
+return; 
+}    
 
 	switch(recvbyte)
 	{
     case 0x14: // logout
-		parseLogout(msg);
+#ifdef SDG_VIOLATIONS
+    if (player->hasOpenViolation) cancelViolation(player->getName());
+#endif
+		#ifdef VITOR_RVR_HANDLING
+if(player->IsAtReport)
+parseCancelRVR();
+#endif
+        parseLogout(msg);
 		break;
-
+		
+#ifdef SDG_VIOLATIONS
+    case 0x9B: // send report (reportee)
+        openViolation(msg);
+    break;
+    
+    case 0x9C: // close report (gm)
+        closeViolation(msg);
+    break;
+    
+    case 0x9D: // cancel report (reportee) -- Vitor packetid
+        cancelViolation(player->getName());
+    break;
+    
+#endif
+		
 	case 0x64: // client moving with steps
 		parseMoveByMouse(msg);
 		break;
-
+		
     case 0x65: // move north
 		parseMoveNorth(msg);
 		break;
-
+		
     case 0x66: // move east
 		parseMoveEast(msg);
 		break;
-
+		
     case 0x67: // move south
 		parseMoveSouth(msg);
 		break;
-
+		
     case 0x68: // move west
 		parseMoveWest(msg);
 		break;
-
+		
     case 0x6A:
 		parseMoveNorthEast(msg);
 		break;
-
+		
     case 0x6B:
 		parseMoveSouthEast(msg);
 		break;
-
+		
     case 0x6C:
 		parseMoveSouthWest(msg);
 		break;
-
+		
     case 0x6D:
 		parseMoveNorthWest(msg);
 		break;
-
+		
 	case 0x6F: // turn north
 		parseTurnNorth(msg);
 		break;
-
+		
 	case 0x70: // turn east
 		parseTurnEast(msg);
 		break;
-
+		
     case 0x71: // turn south
 		parseTurnSouth(msg);
 		break;
-
+		
     case 0x72: // turn west
 		parseTurnWest(msg);
 		break;
-
+		
 	case 0x7D: // Request trade
 		parseRequestTrade(msg);
 		break;
-
+		
 	case 0x7E: // Look at an item in trade
 		parseLookInTrade(msg);
 		break;
-
+		
 	case 0x7F: // Accept trade
 		parseAcceptTrade(msg);
 		break;
-
+		
 	case 0x80: // Close/cancel trade
 		parseCloseTrade();
 		break;
-
+		
     case 0x78: // throw item
 		parseThrow(msg);
 		break;
-
+		
+#ifdef CTRL_Z
+ case 0xE6: // report ctrl + z
+        parseReportBug(msg);
+        break;
+#endif //CTRL_Z
+		
     case 0x82: // use item
 		parseUseItem(msg);
 		break;
-
+		
     case 0x83: // use item
 		parseUseItemEx(msg);
 		break;
-
+		
 	case 0x84: // battle window
 		parseBattleWindow(msg);
 		break;
-
+	
     case 0x85:	//rotate item
 		parseRotateItem(msg);
 		break;
-
+		
     case 0x87: // close container
 		parseCloseContainer(msg);
 		break;
-
+		
 	case 0x88: //"up-arrow" - container
-		parseUpArrowContainer(msg);
+		parseUpArrowContainer(msg);	
 		break;
-
+		
 	case 0x89:
 		parseTextWindow(msg);
 		break;
@@ -241,18 +280,29 @@ void Protocol76::parsePacket(NetworkMessage &msg)
 		parseHouseWindow(msg);
 		break;
 #endif //BD_HOUSE_WINDOW
-
+		
     case 0x8C: // throw item
+     if(player->lookex == 0){
+        player->lookex += 1;
 		parseLookAt(msg);
+        }else{
+        //player->sendCancel("Za szybko!");
+        }
 		break;
-
+		
     case 0x96:  // say something
 		parseSay(msg);
 		break;
-
+		
     case 0xA1: // attack
 		parseAttack(msg);
 		break;
+		
+#ifdef BD_FOLLOW
+    case 0xA2: // follow
+    parseFollow(msg);
+    break;
+#endif //BD_FOLLOW
 
 #ifdef TLM_SKULLS_PARTY
 	case 0xA3: // invite party
@@ -275,39 +325,53 @@ void Protocol76::parsePacket(NetworkMessage &msg)
 		parsePassLeadership(msg);
 		break;
 #endif //TLM_SKULLS_PARTY
-
+		
     case 0xD2: // request Outfit
+     if(player->antyrainbow == 0){
+        player->antyrainbow += 5;
 		parseRequestOutfit(msg);
+        }else{
+        player->sendCancel("Nie aktywne");
+        }
 		break;
-
+		
     case 0xD3: // set outfit
+     if(player->antyrainbow2 == 0){
+        player->antyrainbow2 += 5;
 		parseSetOutfit(msg);
+        }else{
+        player->sendCancel("Nie aktywne");
+        }
 		break;
-
+		
     case 0x97: // request Channels
 		parseGetChannels(msg);
 		break;
-
+		
     case 0x98: // open Channel
 		parseOpenChannel(msg);
 		break;
-
+		
     case 0x99: // close Channel
 		parseCloseChannel(msg);
 		break;
-
+		
+    case 0xe7: //gm crap
+        parseGM(msg);
+        break;
+		
     case 0x9A: // open priv
 		parseOpenPriv(msg);
 		break;
-
+		
     case 0xBE: // cancel move
 		parseCancelMove(msg);
 		break;
-
+		
     case 0xA0: // set attack and follow mode
 		parseModes(msg);
 		break;
-
+	
 #ifdef ELEM_VIP_LIST
 	case 0xDC: // Add vip
 		elemParseAddVip(msg);
@@ -320,26 +384,26 @@ void Protocol76::parsePacket(NetworkMessage &msg)
 	case 0xDC:
 		parseAddVip(msg);
 		break;
-
+		
 	case 0xDD:
 		parseRemVip(msg);
 		break;
 #endif //ELEM_VIP_LIST
-
+		
     case 0x69: // client quit without logout <- wrong
 		if(game->stopEvent(player->eventAutoWalk)) {
 			sendCancelWalk();
 		}
 		break;
-
+		
     case 0x1E: // keep alive / ping response
 		player->receivePing();
 		break;
-
+		
     case 0xC9: // change position
-		// update position
+		// update position 
 		break;
-
+		
     default:
 #ifdef __DEBUG__
 		printf("unknown packet header: %x \n", recvbyte);
@@ -349,7 +413,22 @@ void Protocol76::parsePacket(NetworkMessage &msg)
 	}
 	game->flushSendBuffers();
 }
-
+#ifdef CTRL_Z
+void Protocol76::parseReportBug(NetworkMessage &msg) {
+    std::string bug = msg.GetString();
+    
+    std::stringstream filename;
+    filename << "data/reports/" << player->getName() << " report.txt";
+    FILE* f = fopen(filename.str().c_str(), "a");
+    if(f) {
+        fputs("------------------------------\n", f);
+        fputs(bug.c_str(), f);
+        fputs("\n", f);
+        fclose(f);
+    }
+    player->sendTextMessage(MSG_BLUE_TEXT, "Your report has been sent.");
+}
+#endif //CTRL_Z
 void Protocol76::GetTileDescription(const Tile* tile, NetworkMessage &msg
 #ifdef TRS_GM_INVISIBLE
 									, Player* p
@@ -363,20 +442,20 @@ void Protocol76::GetTileDescription(const Tile* tile, NetworkMessage &msg
 			msg.AddItem(tile->ground);
 			count++;
 		}
-
+		
 		if (tile->splash)
 		{
 			msg.AddItem(tile->splash);
 			count++;
 		}
-
+		
 		ItemVector::const_iterator it;
 		for (it = tile->topItems.begin(); ((it !=tile->topItems.end()) && (count < 10)); ++it)
-		{
+		{		
 			msg.AddItem(*it);
 			count++;
 		}
-
+		
 #ifdef TRS_GM_INVISIBLE
 		CreatureVector::const_iterator itc;
 		for (itc = tile->creatures.begin(); ((itc !=tile->creatures.end()) && (count < 10)); ++itc)
@@ -412,12 +491,12 @@ void Protocol76::GetTileDescription(const Tile* tile, NetworkMessage &msg
 			AddCreature(msg,*itc, known, removedKnown);
 			count++;
 		}
-#endif //TRS_GM_INVISIBLE
-
+#endif //TRS_GM_INVISIBLE	
+		
 		for (it = tile->downItems.begin(); ((it !=tile->downItems.end()) && (count < 10)); ++it)
-		{
+		{			
 			msg.AddItem(*it);
-			count++;
+			count++;			
 		}
 	}
 }
@@ -441,13 +520,13 @@ void Protocol76::GetMapDescription(unsigned short x, unsigned short y, unsigned 
 	else {
 		startz = 7;
 		endz = 0;
-
+		
 		zstep = -1;
 	}
-
+	
 	for(int nz = startz; nz != endz + zstep; nz += zstep) {
 		offset = z - nz;
-
+		
 		for (int nx = 0; nx < width; nx++)
 			for (int ny = 0; ny < height; ny++) {
 				tile = game->getTile(x + nx + offset, y + ny + offset, nz);
@@ -456,23 +535,23 @@ void Protocol76::GetMapDescription(unsigned short x, unsigned short y, unsigned 
 						msg.AddByte(skip);
 						msg.AddByte(0xFF);
 						cc +=skip;
-					}
+					}   
 					skip = 0;
-
+					
 #ifdef TRS_GM_INVISIBLE
 					GetTileDescription(tile, msg, p);
 #else
 					GetTileDescription(tile, msg);
 #endif //TRS_GM_INVISIBLE
 					cc++;
-
+					
 				}
 				else {
 				/*
-				if(skip == -1)
+				if(skip == -1) 
 				skip = 0;
 					*/
-
+					
 					skip++;
 					if (skip == 0xFF) {
 						msg.AddByte(0xFF);
@@ -483,13 +562,13 @@ void Protocol76::GetMapDescription(unsigned short x, unsigned short y, unsigned 
 				}
 			}
 	}
-
+	
 	if (skip >= 0) {
 		msg.AddByte(skip);
 		msg.AddByte(0xFF);
 		cc += skip;
 	}
-
+	
 #ifdef __DEBUG__
 	printf("tiles in total: %d \n", cc);
 #endif
@@ -507,18 +586,18 @@ void Protocol76::checkCreatureAsKnown(unsigned long id, bool &known, unsigned lo
 			// know... make the creature even more known...
 			knownPlayers.erase(i);
 			knownPlayers.push_back(id);
-
+			
 			known = true;
 			return;
 		}
 	}
-
+	
 	// ok, he is unknown...
 	known = false;
-
+	
 	// ... but not in future
 	knownPlayers.push_back(id);
-
+	
 	// to many known players?
 	if(knownPlayers.size() > 150)
 	{
@@ -526,16 +605,16 @@ void Protocol76::checkCreatureAsKnown(unsigned long id, bool &known, unsigned lo
 		for (int n = 0; n < 150; n++)
 		{
 			removedKnown = knownPlayers.front();
-
+			
 			Creature *c = game->getCreatureByID(removedKnown);
 			if ((!c) || (!CanSee(c)))
 				break;
-
+			
 			// this creature we can't remove, still in sight, so back to the end
 			knownPlayers.pop_front();
 			knownPlayers.push_back(removedKnown);
 		}
-
+		
 		// hopefully we found someone to remove :S, we got only 150 tries
 		// if not... lets kick some players with debug errors :)
 		knownPlayers.pop_front();
@@ -551,6 +630,10 @@ void Protocol76::checkCreatureAsKnown(unsigned long id, bool &known, unsigned lo
 // Parse methods
 void Protocol76::parseLogout(NetworkMessage &msg)
 {
+Tile *tile = game->map->getTile(player->pos);
+    if (tile && tile->isPvpArena()){
+        game->teleport(player, player->masterPos);
+        }
 	if(player->inFightTicks >=1000 && player->isRemoved == false){
 		sendCancel("You may not logout during or immediately after a fight!");
 		return;
@@ -578,6 +661,11 @@ void Protocol76::parseGetChannels(NetworkMessage &msg){
 void Protocol76::parseOpenChannel(NetworkMessage &msg){
 	unsigned short channelId = msg.GetU16();
 	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol76::parseOpenChannel()");
+#ifdef SDG_VIOLATIONS
+    if (channelId == 0x03 && player->access >= 2) // violations only for couns++
+    {    sendViolationChannel(player);  return; }
+    else
+#endif
 	if(g_chat.addUserToChannel(player, channelId))
 		sendChannel(channelId, g_chat.getChannelName(player, channelId));
 }
@@ -585,11 +673,33 @@ void Protocol76::parseOpenChannel(NetworkMessage &msg){
 void Protocol76::parseCloseChannel(NetworkMessage &msg){
 	unsigned short channelId = msg.GetU16();
 	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol76::parseCloseChannel()");
+#ifdef SDG_VIOLATIONS	
+    if (channelId == 0x03) player->hasViolationsChannelOpen = false;
+    // dont need to check access, since need couns+ to open
+    else
+#endif
 	g_chat.removeUserFromChannel(player, channelId);
+    if(channelId == 0x08)
+    sendChannel(0x08, "Server Log");
 }
 
+#ifdef _NG_BBK_VIP_SYSTEM__
 void Protocol76::parseOpenPriv(NetworkMessage &msg){
-	std::string receiver;
+	std::string receiver; 
+	receiver = msg.GetString();
+	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol76::parseOpenPriv()");
+	Player* toPlayer = game->getPlayerByName(receiver);
+	if(toPlayer && player == toPlayer){
+	sendCancel("You cannot set up a private message channel with yourself.");
+	return;
+ }
+	else if(toPlayer){
+		sendOpenPriv(toPlayer->getName());
+	}
+}
+#else
+void Protocol76::parseOpenPriv(NetworkMessage &msg){
+	std::string receiver; 
 	receiver = msg.GetString();
 	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol76::parseOpenPriv()");
 	Player* player = game->getPlayerByName(receiver);
@@ -597,18 +707,19 @@ void Protocol76::parseOpenPriv(NetworkMessage &msg){
 		sendOpenPriv(player->getName());
 	}
 }
+#endif //_NG_BBK_VIP_SYSTEM__
 
 void Protocol76::sendOpenPriv(const std::string &receiver){
-	NetworkMessage newmsg;
-	newmsg.AddByte(0xAD);
+	NetworkMessage newmsg; 
+	newmsg.AddByte(0xAD); 
 	newmsg.AddString(receiver);
 	WriteBuffer(newmsg);
-}
+}     
 
 void Protocol76::parseCancelMove(NetworkMessage &msg)
 {
 	game->playerSetAttackedCreature(player, 0);
-
+	
 	game->stopEvent(player->eventAutoWalk);
 	player->sendCancelWalk();
 }
@@ -619,7 +730,10 @@ void Protocol76::parseModes(NetworkMessage &msg)
 	player->setFightMode(msg.GetByte());
 #endif //YUR_FIGHT_MODE
 	//player->fightMode = msg.GetByte();
-	//player->followMode = msg.GetByte();
+	player->followMode = msg.GetByte();
+#ifdef _NG_BBK_PVP__    
+    player->atkMode = msg.GetByte();
+#endif //_NG_BBK_PVP__ 
 }
 
 void Protocol76::parseDebug(NetworkMessage &msg)
@@ -645,7 +759,7 @@ void Protocol76::parseMoveByMouse(NetworkMessage &msg)
 	for (size_t i = 0; i < numdirs; ++i) {
 		unsigned char rawdir = msg.GetByte();
 		Direction dir = SOUTH;
-
+		
 		switch(rawdir) {
 		case 1: dir = EAST; break;
 		case 2: dir = NORTHEAST; break;
@@ -655,11 +769,11 @@ void Protocol76::parseMoveByMouse(NetworkMessage &msg)
 		case 6: dir = SOUTHWEST; break;
 		case 7: dir = SOUTH; break;
 		case 8: dir = SOUTHEAST; break;
-
+			
 		default:
 			continue;
 		};
-
+		
 		/*
 		#ifdef __DEBUG__
 		std::cout << "Walk by mouse: Direction: " << dir << std::endl;
@@ -667,7 +781,7 @@ void Protocol76::parseMoveByMouse(NetworkMessage &msg)
 		*/
 		path.push_back(dir);
 	}
-
+	
 	game->playerAutoWalk(player, path);
 }
 
@@ -676,13 +790,17 @@ void Protocol76::parseMoveNorth(NetworkMessage &msg)
 #ifdef TR_ANTI_AFK
 	player->notAfk();
 #endif //TR_ANTI_AFK
-
+#ifdef RUL_WALKTO
+    if(player->walkTo.type != WALK_NONE) {
+        game->cancelWalkTo(player);
+    }
+#endif //RUL_WALKTO
 	if(game->stopEvent(player->eventAutoWalk)) {
 		player->sendCancelWalk();
 	}
-
+	
 	this->sleepTillMove();
-
+	
 	game->thingMove(player, player,
 		player->pos.x, player->pos.y-1, player->pos.z, 1);
 }
@@ -696,9 +814,9 @@ void Protocol76::parseMoveEast(NetworkMessage &msg)
 	if(game->stopEvent(player->eventAutoWalk)) {
 		player->sendCancelWalk();
 	}
-
+	
 	this->sleepTillMove();
-
+	
 	game->thingMove(player, player,
 		player->pos.x+1, player->pos.y, player->pos.z, 1);
 }
@@ -709,13 +827,17 @@ void Protocol76::parseMoveSouth(NetworkMessage &msg)
 #ifdef TR_ANTI_AFK
 	player->notAfk();
 #endif //TR_ANTI_AFK
-
+#ifdef RUL_WALKTO
+ if(player->walkTo.type != WALK_NONE) {
+        game->cancelWalkTo(player);
+    }
+#endif //RUL_WALKTO
 	if(game->stopEvent(player->eventAutoWalk)) {
 		player->sendCancelWalk();
 	}
-
+	
 	this->sleepTillMove();
-
+	
 	game->thingMove(player, player,
 		player->pos.x, player->pos.y+1, player->pos.z, 1);
 }
@@ -726,13 +848,17 @@ void Protocol76::parseMoveWest(NetworkMessage &msg)
 #ifdef TR_ANTI_AFK
 	player->notAfk();
 #endif //TR_ANTI_AFK
-
+#ifdef RUL_WALKTO
+ if(player->walkTo.type != WALK_NONE) {
+        game->cancelWalkTo(player);
+    }
+#endif //RUL_WALKTO
 	if(game->stopEvent(player->eventAutoWalk)) {
 		player->sendCancelWalk();
 	}
-
+	
 	this->sleepTillMove();
-
+	
 	game->thingMove(player, player,
 		player->pos.x-1, player->pos.y, player->pos.z, 1);
 }
@@ -742,14 +868,18 @@ void Protocol76::parseMoveNorthEast(NetworkMessage &msg)
 #ifdef TR_ANTI_AFK
 	player->notAfk();
 #endif //TR_ANTI_AFK
-
+#ifdef RUL_WALKTO
+ if(player->walkTo.type != WALK_NONE) {
+        game->cancelWalkTo(player);
+    }
+#endif //RUL_WALKTO
 	if(game->stopEvent(player->eventAutoWalk)) {
 		player->sendCancelWalk();
 	}
-
+	
 	this->sleepTillMove();
 	this->sleepTillMove();
-
+	
 	game->thingMove(player, player,
 		(player->pos.x+1), (player->pos.y-1), player->pos.z, 1);
 }
@@ -759,14 +889,18 @@ void Protocol76::parseMoveSouthEast(NetworkMessage &msg)
 #ifdef TR_ANTI_AFK
 	player->notAfk();
 #endif //TR_ANTI_AFK
-
+#ifdef RUL_WALKTO
+ if(player->walkTo.type != WALK_NONE) {
+        game->cancelWalkTo(player);
+    }
+#endif //RUL_WALKTO
 	if(game->stopEvent(player->eventAutoWalk)) {
 		player->sendCancelWalk();
 	}
-
+	
 	this->sleepTillMove();
 	this->sleepTillMove();
-
+	
 	game->thingMove(player, player,
 		(player->pos.x+1), (player->pos.y+1), player->pos.z, 1);
 }
@@ -776,14 +910,18 @@ void Protocol76::parseMoveSouthWest(NetworkMessage &msg)
 #ifdef TR_ANTI_AFK
 	player->notAfk();
 #endif //TR_ANTI_AFK
-
+#ifdef RUL_WALKTO
+ if(player->walkTo.type != WALK_NONE) {
+        game->cancelWalkTo(player);
+    }
+#endif //RUL_WALKTO
 	if(game->stopEvent(player->eventAutoWalk)) {
 		player->sendCancelWalk();
 	}
-
+	
 	this->sleepTillMove();
 	this->sleepTillMove();
-
+	
 	game->thingMove(player, player,
 		(player->pos.x-1), (player->pos.y+1), player->pos.z, 1);
 }
@@ -793,16 +931,20 @@ void Protocol76::parseMoveNorthWest(NetworkMessage &msg)
 #ifdef TR_ANTI_AFK
 	player->notAfk();
 #endif //TR_ANTI_AFK
-
+#ifdef RUL_WALKTO
+ if(player->walkTo.type != WALK_NONE) {
+        game->cancelWalkTo(player);
+    }
+#endif //RUL_WALKTO
 	if(game->stopEvent(player->eventAutoWalk)) {
 		player->sendCancelWalk();
 	}
-
+	
 	this->sleepTillMove();
 	this->sleepTillMove();
-
+	
 	game->thingMove(player, player,
-		(player->pos.x-1), (player->pos.y-1), player->pos.z, 1);
+		(player->pos.x-1), (player->pos.y-1), player->pos.z, 1);   
 }
 
 
@@ -840,11 +982,11 @@ void Protocol76::parseTurnWest(NetworkMessage &msg)
 #endif //TR_ANTI_AFK
 	game->creatureTurn(player, WEST);
 }
-
+/*
 void Protocol76::parseRequestOutfit(NetworkMessage &msg)
 {
 	msg.Reset();
-
+	
 	msg.AddByte(0xC8);
 	msg.AddByte(player->looktype);
 	msg.AddByte(player->lookhead);
@@ -852,41 +994,93 @@ void Protocol76::parseRequestOutfit(NetworkMessage &msg)
 	msg.AddByte(player->looklegs);
 	msg.AddByte(player->lookfeet);
 
-	switch (player->getSex())
-	{
-	case PLAYERSEX_FEMALE:
-		msg.AddByte(PLAYER_FEMALE_1);
-#ifdef YUR_PREMIUM_PROMOTION
-		msg.AddByte(player->isPremium()? PLAYER_FEMALE_7 : PLAYER_FEMALE_4);
-#else
-		msg.AddByte(PLAYER_FEMALE_4);
-#endif //YUR_PREMIUM_PROMOTION
-		break;
-
-	case PLAYERSEX_MALE:
-		msg.AddByte(PLAYER_MALE_1);
-#ifdef YUR_PREMIUM_PROMOTION
-		msg.AddByte(player->isPremium()? PLAYER_MALE_7 : PLAYER_MALE_4);
-#else
-		msg.AddByte(PLAYER_MALE_4);
-#endif //YUR_PREMIUM_PROMOTION
-		break;
-
-	case PLAYERSEX_OLDMALE:
-		msg.AddByte(160);
-		msg.AddByte(160);
-		break;
-
-	default:
-		msg.AddByte(PLAYER_MALE_1);
-#ifdef YUR_PREMIUM_PROMOTION
-		msg.AddByte(player->isPremium()? PLAYER_MALE_7 : PLAYER_MALE_4);
-#else
-		msg.AddByte(PLAYER_MALE_4);
-#endif //YUR_PREMIUM_PROMOTION
-	}
-
+if (player->getSex()== PLAYERSEX_FEMALE){
+     if (player->looktype==PLAYER_FEMALE_8){
+     msg.AddByte(PLAYER_FEMALE_8);
+     msg.AddByte(PLAYER_FEMALE_8);
+     }else if (player->looktype==PLAYER_FEMALE_9){
+     msg.AddByte(PLAYER_FEMALE_9);
+     msg.AddByte(PLAYER_FEMALE_9);
+     }else{
+     msg.AddByte(PLAYER_FEMALE_1);
+     msg.AddByte((player->isPremium()? PLAYER_FEMALE_7 : PLAYER_FEMALE_4));              
+     }                  
+}else{
+     if (player->looktype==PLAYER_MALE_8){
+     msg.AddByte(PLAYER_MALE_8);
+     msg.AddByte(PLAYER_MALE_8);
+     }else if (player->looktype==PLAYER_MALE_9){
+     msg.AddByte(PLAYER_MALE_9);
+     msg.AddByte(PLAYER_MALE_9);
+     }else{
+     msg.AddByte(PLAYER_MALE_1);
+     msg.AddByte((player->isPremium()? PLAYER_MALE_7 : PLAYER_MALE_4));               
+     }       
+}
+	
 	WriteBuffer(msg);
+}
+*/
+
+void Protocol76::parseRequestOutfit(NetworkMessage &msg)
+{
+    msg.Reset();
+    
+    msg.AddByte(0xC8);
+    msg.AddByte(player->looktype);
+    msg.AddByte(player->lookhead);
+    msg.AddByte(player->lookbody);
+    msg.AddByte(player->looklegs);
+    msg.AddByte(player->lookfeet);
+
+    switch (player->getSex()) 
+    {
+    case PLAYERSEX_FEMALE:
+        msg.AddByte(PLAYER_FEMALE_1);
+#ifdef YUR_PREMIUM_PROMOTION
+        msg.AddByte(player->isPremium()? PLAYER_FEMALE_7 : PLAYER_FEMALE_4);
+#else
+        msg.AddByte(PLAYER_FEMALE_4);    
+#endif //YUR_PREMIUM_PROMOTION
+        break;
+
+    case PLAYERSEX_MALE:
+        msg.AddByte(PLAYER_MALE_1);
+#ifdef YUR_PREMIUM_PROMOTION
+        msg.AddByte(player->isPremium()? PLAYER_MALE_7 : PLAYER_MALE_4);
+#else
+        msg.AddByte(PLAYER_MALE_4);
+#endif //YUR_PREMIUM_PROMOTION
+        break;
+
+        case PLAYERSEX_NIMF:
+        msg.AddByte(PLAYER_NIMF_1);
+#ifdef YUR_PREMIUM_PROMOTION
+        msg.AddByte(player->isPremium()? PLAYER_NIMF_1 : PLAYER_NIMF_1);
+#else
+        msg.AddByte(PLAYER_NIMF_1);
+#endif //YUR_PREMIUM_PROMOTION
+        break;
+        
+            case PLAYERSEX_DWARF:
+        msg.AddByte(PLAYER_DWARF_1);
+#ifdef YUR_PREMIUM_PROMOTION
+        msg.AddByte(player->isPremium()? PLAYER_DWARF_1 : PLAYER_DWARF_1);
+#else
+        msg.AddByte(PLAYER_DWARF_1);
+#endif //YUR_PREMIUM_PROMOTION
+        break;
+        
+    default:
+        msg.AddByte(PLAYER_MALE_1);
+#ifdef YUR_PREMIUM_PROMOTION
+        msg.AddByte(player->isPremium()? PLAYER_MALE_7 : PLAYER_MALE_4);
+#else
+        msg.AddByte(PLAYER_MALE_4);
+#endif //YUR_PREMIUM_PROMOTION
+    }
+    
+    WriteBuffer(msg);
 }
 
 void Protocol76::sendSetOutfit(const Creature* creature) {
@@ -894,6 +1088,7 @@ void Protocol76::sendSetOutfit(const Creature* creature) {
 		NetworkMessage newmsg;
 		newmsg.AddByte(0x8E);
 		newmsg.AddU32(creature->getID());
+	
 
 #ifdef BD_ITEM_LOOK
 		if (creature->looktype > 1000)
@@ -905,14 +1100,32 @@ void Protocol76::sendSetOutfit(const Creature* creature) {
 #endif //BD_ITEM_LOOK
 		{
 #ifdef YUR_INVISIBLE
-			if (creature->isInvisible())
+		if (creature->isInvisible())
 			{
 				newmsg.AddByte(0);
 				newmsg.AddU16(0);
-			}
-			else
+			}			
 #endif //YUR_INVISIBLE
-			{
+#ifdef CHAMELEON
+ else if (creature->isInvisible())
+  {
+    newmsg.AddByte(0x00);
+    newmsg.AddByte(0x00);
+    newmsg.AddByte(0x00);
+    } 
+    else if(creature->itemID > 0){
+    newmsg.AddByte(0x00);
+    if(creature->getItemId() != 0) {
+                const ItemType &it = Item::items[creature->getItemId()];
+                newmsg.AddU16(it.clientId);
+            }
+    else {
+                newmsg.AddU16(0);
+    }
+        }   
+#endif //CHAMELEON
+    else {
+       
 				newmsg.AddByte(creature->looktype);
 				newmsg.AddByte(creature->lookhead);
 				newmsg.AddByte(creature->lookbody);
@@ -925,7 +1138,7 @@ void Protocol76::sendSetOutfit(const Creature* creature) {
 	}
 }
 
-void Protocol76::sendInventory(unsigned char sl_id){
+void Protocol76::sendInventory(unsigned char sl_id){	
 	NetworkMessage msg;
 	AddPlayerInventoryItem(msg,player,sl_id);
 	WriteBuffer(msg);
@@ -953,19 +1166,19 @@ void Protocol76::sendTextMessage(MessageClasses mclass, const char* message,cons
 void Protocol76::sendChannelsDialog(){
 	NetworkMessage newmsg;
 	ChannelList list;
-
+	
 	list = g_chat.getChannelList(player);
-
+	
 	newmsg.AddByte(0xAB);
-
+	
 	newmsg.AddByte((unsigned char)list.size()); //how many
-
+	
 	while(list.size())
 	{
 		ChatChannel *channel;
 		channel = list.front();
 		list.pop_front();
-
+		
 		newmsg.AddU16(channel->getId());
 		newmsg.AddString(channel->getName());
 	}
@@ -974,12 +1187,12 @@ void Protocol76::sendChannelsDialog(){
 
 void Protocol76::sendChannel(unsigned short channelId, std::string channelName){
 	NetworkMessage newmsg;
-
+	
 	newmsg.AddByte(0xAC);
 	newmsg.AddU16(channelId);
 	newmsg.AddString(channelName);
-
-	WriteBuffer(newmsg);
+	
+	WriteBuffer(newmsg); 
 }
 
 void Protocol76::sendIcons(int icons){
@@ -989,32 +1202,77 @@ void Protocol76::sendIcons(int icons){
 	WriteBuffer(newmsg);
 }
 
+/*
 void Protocol76::parseSetOutfit(NetworkMessage &msg)
 {
 	int temp = msg.GetByte();
-	if ((player->getSex() == PLAYERSEX_FEMALE && temp >= PLAYER_FEMALE_1 &&
-#ifdef YUR_PREMIUM_PROMOTION
-		temp <= (player->isPremium()? PLAYER_FEMALE_7 : PLAYER_FEMALE_4)) ||
-#else
-		temp <= PLAYER_FEMALE_7) ||
-#endif //YUR_PREMIUM_PROMOTION
-
-		(player->getSex() == PLAYERSEX_MALE && temp >= PLAYER_MALE_1 &&
-#ifdef YUR_PREMIUM_PROMOTION
-		temp <= (player->isPremium()? PLAYER_MALE_7 : PLAYER_MALE_4)))
-#else
-		temp <= PLAYER_MALE_7))
-#endif //YUR_PREMIUM_PROMOTION
-	{
+if ((player->getSex() == PLAYERSEX_FEMALE && (
+	(player->looktype==PLAYER_FEMALE_9 && temp==PLAYER_FEMALE_9)||
+	(player->looktype==PLAYER_FEMALE_8 && temp==PLAYER_FEMALE_8)||
+	(player->looktype!=PLAYER_FEMALE_8 && player->looktype!=PLAYER_FEMALE_9 &&
+    ((temp==PLAYER_FEMALE_1)||(temp==PLAYER_FEMALE_2)||(temp==PLAYER_FEMALE_3)||
+    (temp==PLAYER_FEMALE_4)||(temp==PLAYER_FEMALE_5 && player->isPremium())||
+    (temp==PLAYER_FEMALE_6 && player->isPremium())||
+    (temp==PLAYER_FEMALE_7 && player->isPremium()))))) ||
+    (player->getSex() == PLAYERSEX_MALE && 
+    ((player->looktype==PLAYER_MALE_9 && temp==PLAYER_MALE_9)||
+	(player->looktype==PLAYER_MALE_8 && temp==PLAYER_MALE_8)||
+	(player->looktype!=PLAYER_MALE_8 && player->looktype!=PLAYER_MALE_9 &&
+    ((temp==PLAYER_MALE_1)||(temp==PLAYER_MALE_2)||(temp==PLAYER_MALE_3)||
+    (temp==PLAYER_MALE_4)||(temp==PLAYER_MALE_5 && player->isPremium())||
+    (temp==PLAYER_MALE_6 && player->isPremium())||
+    (temp==PLAYER_MALE_7 && player->isPremium()))))))
 		player->looktype= temp;
 		player->lookmaster = player->looktype;
 		player->lookhead=msg.GetByte();
 		player->lookbody=msg.GetByte();
 		player->looklegs=msg.GetByte();
 		player->lookfeet=msg.GetByte();
-
+		
 		game->creatureChangeOutfit(player);
 	}
+*/
+
+void Protocol76::parseSetOutfit(NetworkMessage &msg)
+{
+    int temp = msg.GetByte();
+    if ((player->getSex() == PLAYERSEX_FEMALE && temp >= PLAYER_FEMALE_1 && 
+#ifdef YUR_PREMIUM_PROMOTION
+        temp <= (player->isPremium()? PLAYER_FEMALE_7 : PLAYER_FEMALE_4)) ||
+#else
+        temp <= PLAYER_FEMALE_7) ||
+#endif //YUR_PREMIUM_PROMOTION
+
+        (player->getSex() == PLAYERSEX_MALE && temp >= PLAYER_MALE_1 && 
+#ifdef YUR_PREMIUM_PROMOTION
+        temp <= (player->isPremium()? PLAYER_MALE_7 : PLAYER_MALE_4)) ||
+#else
+        temp <= PLAYER_MALE_7) ||
+#endif //YUR_PREMIUM_PROMOTION
+
+    (player->getSex() == PLAYERSEX_DWARF && temp >= PLAYER_DWARF_1 && 
+#ifdef YUR_PREMIUM_PROMOTION
+        temp <= (player->isPremium()? PLAYER_DWARF_1 : PLAYER_DWARF_1)) ||
+#else
+        temp <= PLAYER_DWARF_1) ||
+#endif //YUR_PREMIUM_PROMOTION
+
+        (player->getSex() == PLAYERSEX_NIMF && temp >= PLAYER_NIMF_1 && 
+#ifdef YUR_PREMIUM_PROMOTION
+        temp <= (player->isPremium()? PLAYER_NIMF_1 : PLAYER_NIMF_1)))
+#else
+        temp <= PLAYER_NIMF_1))
+#endif //YUR_PREMIUM_PROMOTION
+    {
+        player->looktype= temp;
+        player->lookmaster = player->looktype;
+        player->lookhead=msg.GetByte();
+        player->lookbody=msg.GetByte();
+        player->looklegs=msg.GetByte();
+        player->lookfeet=msg.GetByte();
+        
+        game->creatureChangeOutfit(player);
+    }
 }
 
 
@@ -1026,9 +1284,41 @@ void Protocol76::parseUseItemEx(NetworkMessage &msg)
 	Position pos_to = msg.GetPosition();
 	/*unsigned short tile_id = */msg.GetU16();
 	unsigned char to_stackpos = msg.GetByte();
-
+#ifdef CHAMELEON
+    Item *rune = dynamic_cast<Item*>(game->getThing(pos_from, from_stackpos, player));
+	Item *item = dynamic_cast<Item*>(game->getThing(pos_to, to_stackpos, player));
+if(rune && rune->getID() == ITEM_CHAMELEON)
+{
+if((player->pos.x - pos_to.x) > 1 || (player->pos.y - pos_to.y) > 1 && pos_to.x != 0xFFFF)
+{
+player->sendMagicEffect(player->pos, NM_ME_PUFF);
+player->sendCancel("Sorry, not possible.");
+return;
+}
+else if(item && !item->isNotMoveable() && player->invisibleTicks == 0)
+{
+player->itemID = item->getID();
+player->chameleonTime = 90000;
+player->sendMagicEffect(player->pos, NM_ME_MAGIC_BLOOD);
+game->creatureChangeOutfit(player);
+rune->setItemCharge(rune->getItemCharge() - 1);
+if(rune->getItemCharge() == 0)
+game->removeThing(player, pos_from, rune);
+}
+else if(item && !item->isNotMoveable() && player->invisibleTicks >= 0)
+{
+player->sendMagicEffect(player->pos, NM_ME_PUFF);
+player->sendTextMessage(MSG_SMALLINFO, "First wait for invisible to work out.");
+}
+else
+{
+player->sendMagicEffect(player->pos, NM_ME_PUFF);
+player->sendTextMessage(MSG_SMALLINFO, "You cannot use this object.");
+}
+}
+    #endif //CHAMELEON
 	game->playerUseItemEx(player,pos_from,from_stackpos, pos_to, to_stackpos, itemid);
-
+	
 }
 
 void Protocol76::parseBattleWindow(NetworkMessage &msg)
@@ -1045,25 +1335,25 @@ void Protocol76::sendContainer(unsigned char index, Container *container)
 {
 	if(!container)
 		return;
-
+	
 	NetworkMessage msg;
-
+	
 	player->addContainer(index, container);
-
+	
 	msg.AddByte(0x6E);
 	msg.AddByte(index);
-
+	
 	//msg.AddU16(container->getID());
 	msg.AddItemId(container);
 	msg.AddString(container->getName());
 	msg.AddByte(container->capacity());
 	if(container->getParent() != NULL)
-		msg.AddByte(0x01); // container up ID (can go up)
+		msg.AddByte(0x01); // container up ID (can go up) 
 	else
 		msg.AddByte(0x00);
-
+	
 	msg.AddByte(container->size());
-
+	
 	ContainerList::const_iterator cit;
 	for (cit = container->getItems(); cit != container->getEnd(); ++cit) {
 		msg.AddItem(*cit);
@@ -1080,34 +1370,34 @@ void Protocol76::sendTradeItemRequest(const Player* player, const Item* item, bo
 	else {
 		msg.AddByte(0x7E);
 	}
-
+	
 	msg.AddString(player->getName());
-
+	
 	const Container *tradeContainer = dynamic_cast<const Container*>(item);
 	if(tradeContainer) {
-
+		
 		std::list<const Container*> stack;
 		stack.push_back(tradeContainer);
-
+		
 		std::list<const Item*> itemstack;
 		itemstack.push_back(tradeContainer);
-
+		
 		ContainerList::const_iterator it;
-
+		
 		while(stack.size() > 0) {
 			const Container *container = stack.front();
 			stack.pop_front();
-
+			
 			for (it = container->getItems(); it != container->getEnd(); ++it) {
 				Container *container = dynamic_cast<Container*>(*it);
 				if(container) {
 					stack.push_back(container);
 				}
-
+				
 				itemstack.push_back(*it);
 			}
 		}
-
+		
 		msg.AddByte((unsigned char)itemstack.size());
 		while(itemstack.size() > 0) {
 			const Item* item = itemstack.front();
@@ -1119,7 +1409,7 @@ void Protocol76::sendTradeItemRequest(const Player* player, const Item* item, bo
 		msg.AddByte(1);
 		msg.AddItem(item);
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -1127,14 +1417,14 @@ void Protocol76::sendCloseTrade()
 {
 	NetworkMessage msg;
 	msg.AddByte(0x7F);
-
+	
 	WriteBuffer(msg);
 }
 
 void Protocol76::sendCloseContainer(unsigned char containerid)
 {
 	NetworkMessage msg;
-
+	
 	msg.AddByte(0x6F);
 	msg.AddByte(containerid);
 	WriteBuffer(msg);
@@ -1146,12 +1436,13 @@ void Protocol76::parseUseItem(NetworkMessage &msg)
 	unsigned short itemid = msg.GetItemId();
 	unsigned char stack = msg.GetByte();
 	unsigned char index = msg.GetByte();
-
+	
 #ifdef __DEBUG__
 	std::cout << "parseUseItem: " << "x: " << pos.x << ", y: " << (int)pos.y <<  ", z: " << (int)pos.z << ", item: " << (int)item << ", stack: " << (int)stack << ", index: " << (int)index << std::endl;
 #endif
-
-	game->playerUseItem(player, pos, stack, itemid, index);
+	
+	//game->playerUseItem(player, pos, stack, itemid, index);
+    game->playerUseItem(player, pos, stack, itemid, index, false);
 }
 
 void Protocol76::parseCloseContainer(NetworkMessage &msg)
@@ -1168,7 +1459,7 @@ void Protocol76::parseUpArrowContainer(NetworkMessage &msg)
 	Container *container = player->getContainer(containerid);
 	if(!container)
 		return;
-
+	
 	Container *parentcontainer = container->getParent();
 	if(parentcontainer) {
 		sendContainer(containerid, parentcontainer);
@@ -1178,31 +1469,189 @@ void Protocol76::parseUpArrowContainer(NetworkMessage &msg)
 void Protocol76::parseThrow(NetworkMessage &msg)
 {
 	unsigned short from_x     = msg.GetU16();
-	unsigned short from_y     = msg.GetU16();
+	unsigned short from_y     = msg.GetU16(); 
 	unsigned char  from_z     = msg.GetByte();
 	unsigned short itemid     = msg.GetItemId();
 	unsigned char  from_stack = msg.GetByte();
 	unsigned short to_x       = msg.GetU16();
-	unsigned short to_y       = msg.GetU16();
+	unsigned short to_y       = msg.GetU16(); 
 	unsigned char  to_z       = msg.GetByte();
 	unsigned char count       = msg.GetByte();
+	
+	if(itemid != 0 && count <= 0)
+    return;
+    if (count == 0x00 && from_stack != 0xFF)  // 255 check that stack exist.
+	return;
+	
 	/*
 	std::cout << "parseThrow: " << "from_x: " << (int)from_x << ", from_y: " << (int)from_y
-	<<  ", from_z: " << (int)from_z << ", item: " << (int)itemid << ", from_stack: "
+	<<  ", from_z: " << (int)from_z << ", item: " << (int)itemid << ", from_stack: " 
 	<< (int)from_stack << " to_x: " << (int)to_x << ", to_y: " << (int)to_y
-	<<  ", to_z: " << (int)to_z
+	<<  ", to_z: " << (int)to_z  
 	<< ", count: " << (int)count << std::endl;*/
 	bool toInventory = false;
 	bool fromInventory = false;
+	
+#ifdef BD_DOWN
+    Position from_pos = Position(from_x,from_y,from_z);
+Position to_pos = Position(to_x,to_y,to_z);
+Tile* t = game->getTile(to_x, to_y, to_z);
+Item* itan = dynamic_cast<Item*>(game->getThing(Position(from_x, from_y, from_z), from_stack, player));
+#ifdef WALLS_FIX
+if(itan && itan->isNotMoveable()) {
+std::cout << "Nick: " << player->getName() << std::endl; //Zapisujemy kto chce usun¹æ œciane :)                          
+return;
+}
+#endif //WALLS_FIX
+if(t && !t->hasItem(ITEM_DUSTBIN) && game->canDelete(player, itemid, to_pos, from_pos, from_stack, count) || game->canTeleportItem(player, itemid, to_pos, from_pos, from_stack, count))
+return;
+if(from_x == to_x && from_y == to_y && from_z == to_z)
+return;
 
+if(to_x != 0xFFFF && t && t->hasItem(ITEM_DUSTBIN)) {
+if(from_x != 0xFFFF && (abs(player->pos.x - from_x) > 1 || abs(player->pos.y - from_y) > 1 ||  player->pos.z != from_z))
+return;
+
+if(to_x != 0xFFFF && t && t->hasItem(ITEM_DUSTBIN))
+game->trashItems(player, itan, from_pos, from_stack, count);
+}
+#endif //BD_DOWN
+	
 	if(from_x == to_x && from_y == to_y && from_z == to_z)
 		return;
-
+		
+		if(to_x != 0xFFFF && (itemid == ITEM_PARCEL || itemid == ITEM_LETTER))
+{
+Tile* t = game->getTile(to_x, to_y, to_z);
+if(t && t->hasItem(ITEM_MAILBOX))
+{
+Item* parcel = dynamic_cast<Item*>(game->getThing(Position(from_x, from_y, from_z), from_stack, player));
+if(parcel)
+{
+bool canSend = true;
+bool foundLabel = false;
+std::string receiver;
+unsigned int depotid;
+Container* parcel2 = dynamic_cast<Container*>(parcel);
+if(parcel2 && itemid == ITEM_PARCEL)
+{
+for(int x = 0; x < parcel2->size(); x++)
+{
+Item* label = dynamic_cast<Item*>(parcel2->getItem(x));
+if(label && label->getID() == ITEM_LABEL)
+{
+foundLabel = true;
+std::string text = label->getText();
+std::istringstream iss(text, std::istringstream::in);
+int i = 0;
+std::string line[2];
+while(std::getline(iss, text,'\n'))
+{
+line[i] = text;
+i++;
+if(i == 2)
+break;
+}
+receiver = line[0];
+std::transform(line[1].begin(), line[1].end(), line[1].begin(), (int(*)(int))tolower);
+//if(line[1] == g_config.getGlobalString("city1","city"))
+if(line[1] == "")
+depotid = 1;
+else
+canSend = false;
+if(!game->isPlayer(receiver))
+canSend = false;
+if(canSend)
+break;
+}
+}
+}
+else if(itemid == ITEM_LETTER)
+{
+foundLabel = true;
+std::string text = parcel->getText();
+std::istringstream iss(text, std::istringstream::in);
+int i = 0;
+std::string line[2];
+while(std::getline(iss, text,'\n'))
+{
+line[i] = text;
+i++;
+if(i == 2)
+break;
+}
+receiver = line[0];
+std::transform(line[1].begin(), line[1].end(), line[1].begin(), (int(*)(int))tolower);
+if(line[1] == "")
+depotid = 1;
+else
+canSend = false;
+if(!game->isPlayer(receiver))
+canSend = false;
+}
+if(canSend && foundLabel)
+{
+game->removeThing(player,Position(from_x, from_y, from_z), parcel, true);
+Player* player = game->getPlayerByName(receiver);
+if(player)
+{
+parcel->setID((itemid == ITEM_LETTER?ITEM_STLETTER:ITEM_STPARCEL));
+Container* depot = player->getDepot(depotid);
+if(depot)
+depot->addItem(parcel);
+std::vector<unsigned char> containerlist;
+containerLayout::const_iterator cit;
+for(cit = player->getContainers(); cit != player->getEndContainer(); ++cit)
+{
+Container* c = cit->second;
+const char* msg = (itemid == ITEM_PARCEL?"You received a new parcel.":"You received a new letter.");
+if(c == depot)
+{
+player->sendTextMessage(MSG_ADVANCE, msg);
+player->onItemAddContainer(depot, parcel);
+break;
+}
+if(c->getParent() == depot)
+{
+player->sendTextMessage(MSG_ADVANCE, msg);
+break;
+}
+}
+}
+else
+{
+Protocol76* prot = new Protocol76(0);
+player = new Player(receiver, prot);
+parcel->setID((itemid == ITEM_LETTER?ITEM_STLETTER:ITEM_STPARCEL));
+IOPlayer::instance()->loadPlayer(player, receiver);
+Container* depot = player->getDepot(depotid);
+if(depot)
+depot->addItem(parcel);
+player->lastlogin = player->lastLoginSaved;
+IOPlayer::instance()->savePlayer(player);
+delete player;
+}
+return;
+}
+}
+}
+}
+#ifdef MOVE_UP
+ if(from_x == 0xFFFF && to_z == 254) {
+  unsigned char from_cid;
+  
+  if(from_y & 0x40) {
+   from_cid = from_y & 0x0F;
+  }
+  
+  game->thingMove(player, from_cid, from_z);
+    }
+#endif //MOVE_UP
 	//container/inventory to container/inventory
 	if(from_x == 0xFFFF && to_x == 0xFFFF) {
 		unsigned char from_cid;
 		unsigned char to_cid;
-
+		
 		if(from_y & 0x40) {
 			from_cid = from_y & 0x0F;
 		}
@@ -1210,7 +1659,7 @@ void Protocol76::parseThrow(NetworkMessage &msg)
 			fromInventory = true;
 			from_cid = static_cast<unsigned char>(from_y);
 		}
-
+		
 		if(to_y & 0x40) {
 			to_cid = static_cast<unsigned char>(to_y & 0x0F);
 		}
@@ -1218,13 +1667,13 @@ void Protocol76::parseThrow(NetworkMessage &msg)
 			toInventory = true;
 			to_cid = static_cast<unsigned char>(to_y);
 		}
-
+		
 		game->thingMove(player, from_cid, from_z, itemid,fromInventory, to_cid, to_z, toInventory, count);
 	}
 	//container/inventory to ground
 	else if(from_x == 0xFFFF && to_x != 0xFFFF) {
 		unsigned char from_cid;
-
+		
 		if(0x40 & from_y) {
 			from_cid = static_cast<unsigned char>(from_y & 0x0F);
 		}
@@ -1232,31 +1681,31 @@ void Protocol76::parseThrow(NetworkMessage &msg)
 			fromInventory = true;
 			from_cid = static_cast<unsigned char>(from_y);
 		}
-
+		
 		game->thingMove(player, from_cid, from_z, itemid, fromInventory, Position(to_x, to_y, to_z), count);
 	}
 	//ground to container/inventory
 	else if(from_x != 0xFFFF && to_x == 0xFFFF) {
 		unsigned char to_cid;
-
+		
 		if(0x40 & to_y) {
 			to_cid = static_cast<unsigned char>(to_y & 0x0F);
 		}
 		else {
 			toInventory = true;
 			to_cid = static_cast<unsigned char>(to_y);
-
+			
 			if(to_cid > 11) {
 				return;
 			}
-
+			
 			if(to_cid == 0) {
 				//Special condition, player drops an item to the "capacity window" when the inventory is minimized,
 				//we should add this item to the most appropriate slot/container
 				return;
 			}
 		}
-
+		
 		game->thingMove(player, Position(from_x, from_y, from_z), from_stack, itemid, to_cid, to_z, toInventory, count);
 	}
 	//ground to ground
@@ -1265,14 +1714,14 @@ void Protocol76::parseThrow(NetworkMessage &msg)
 		if(!fromTile)
 			return;
 		Creature *movingCreature = dynamic_cast<Creature*>(fromTile->getThingByStackPos(from_stack));
-
+		
 		if(movingCreature) {
 			Player *movingPlayer = dynamic_cast<Player*>(movingCreature);
 			if(player == movingPlayer) {
 				this->sleepTillMove();
 			}
 		}
-
+		
 		game->thingMove(player, from_x, from_y, from_z, from_stack, itemid, to_x, to_y, to_z, count);
 	}
 }
@@ -1282,15 +1731,15 @@ void Protocol76::parseLookAt(NetworkMessage &msg){
 	Position LookPos = msg.GetPosition();
 	unsigned short ItemNum = msg.GetU16();
 	unsigned char stackpos = msg.GetByte();
-
+	
 #ifdef __DEBUG__
 	std::cout << "look at: " << LookPos << std::endl;
 	std::cout << "itemnum: " << ItemNum << " stackpos: " << (long)stackpos<< std::endl;
 #endif
-
+	
 	NetworkMessage newmsg;
 	std::stringstream ss;
-
+	
 	/*
 	#ifdef __DEBUG__
 	ss << "You look at " << LookPos << " and see Item # " << ItemNum << ".";
@@ -1300,7 +1749,7 @@ void Protocol76::parseLookAt(NetworkMessage &msg){
 	Item *item = NULL;
 	Creature *creature = NULL;
 	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol76::parseLookAt()");
-
+	
 	if(LookPos.x != 0xFFFF) {
 		Tile* tile = game->getTile(LookPos.x, LookPos.y, LookPos.z);
 		if(tile){
@@ -1313,11 +1762,11 @@ void Protocol76::parseLookAt(NetworkMessage &msg){
 		if(LookPos.y & 0x40) {
 			unsigned char from_cid = LookPos.y & 0x0F;
 			unsigned char slot = LookPos.z;
-
+			
 			Container *parentcontainer = player->getContainer(from_cid);
 			if(!parentcontainer)
 				return;
-
+			
 			item = parentcontainer->getItem(slot);
 		}
 		else {
@@ -1325,9 +1774,21 @@ void Protocol76::parseLookAt(NetworkMessage &msg){
 			item = player->getItem(from_cid);
 		}
 	}
-
-	if(item)
+	
+	if(item) 
 	{
+#ifdef TLM_BEDS    
+       if(item->isBed()){ 
+    Position pos(LookPos.x, LookPos.y, LookPos.z); 
+    std::stringstream bedtext;        
+    bedtext << "You see a bed"/*<< item->getName()*/ 
+    << ".\n " << game->getBedSleeper(pos) << " is sleeping there."; 
+    AddTextMessage(newmsg, MSG_INFO, 
+    bedtext.str().c_str()); 
+    sendNetworkMessage(&newmsg); 
+            return; 
+    } 
+#endif //TLM_BEDS  
 #ifdef TLM_HOUSE_SYSTEM
 		Tile* doorTile = game->getTile(LookPos);
 		Thing* doorThing = doorTile? doorTile->getTopThing() : NULL;
@@ -1346,33 +1807,40 @@ void Protocol76::parseLookAt(NetworkMessage &msg){
 				LookPos.z == player->pos.z) {
 				fullDescription = true;
 			}
-
+			
 			std::stringstream ss;
-			ss << "You see " << item->getDescription(fullDescription);
+			ss << "Widzisz " << item->getDescription(fullDescription);
+
+#ifdef PALL_REQ_LVL
+            if (item->getReqLevel() > 0 && player->getLevel() < item->getReqLevel())
+               ss << "\nMusisz miec " << item->getReqLevel() << " poziom aby tego uzywac.";
+#endif //PALL_REQ_LVL
 
 #ifdef YUR_GM_LOOK
 			if (player->access >= g_config.ACCESS_LOOK)
 				ss << "\nId: " << Item::items.reverseLookUp(ItemNum)
 				<< ". Pos: " << LookPos.x << ' ' << LookPos.y << ' ' << LookPos.z << '.';
 #endif //YUR_GM_LOOK
-
-			AddTextMessage(newmsg,MSG_INFO, ss.str().c_str());
+            if(Item::items.reverseLookUp(ItemNum) == ITEM_KRZYZYK){
+            AddTextMessage(newmsg,MSG_RED_INFO, ss.str().c_str());
+            }else{
+			AddTextMessage(newmsg,MSG_INFO, ss.str().c_str());}
 		}
 	}
 	else if(creature) {
 		if(player == creature) {
 			std::stringstream ss;
-			ss << "You see " << creature->getDescription(true);
+			ss << "Widzisz " << creature->getDescription(true);
 			AddTextMessage(newmsg,MSG_INFO, ss.str().c_str());
 		}
 		else {
 			std::stringstream ss;
-			ss << "You see " << creature->getDescription().c_str();
+			ss << "Widzisz " << creature->getDescription().c_str();
 			AddTextMessage(newmsg,MSG_INFO, ss.str().c_str());
 		}
 	}
 	//#endif
-
+	
 	sendNetworkMessage(&newmsg);
 }
 
@@ -1381,23 +1849,75 @@ void Protocol76::parseLookAt(NetworkMessage &msg){
 void Protocol76::parseSay(NetworkMessage &msg)
 {
 	SpeakClasses type = (SpeakClasses)msg.GetByte();
-
+	
 	std::string receiver;
 	unsigned short channelId = 0;
 	if(type == SPEAK_PRIVATE ||
-		type == SPEAK_PRIVATE_RED)
+		type == SPEAK_PRIVATE_RED
+  #ifdef SDG_VIOLATIONS
+        || type == SPEAK_CHANNEL_RV2
+#endif
+)
 		receiver = msg.GetString();
 	if(type == SPEAK_CHANNEL_Y ||
 		type == SPEAK_CHANNEL_R1 ||
 		type == SPEAK_CHANNEL_R2)
 		channelId = msg.GetU16();
 	std::string text = msg.GetString();
+	
+ #ifdef REX_MUTED
+ if (type == SPEAK_YELL && player->level < g_config.LVL_YELL){
+    player->sendCancel("Sorry, you can't yell yet.");//noob yelling -.-
+    return;
+    }
+#endif //REX_MUTED
+	
+	   bool Spells = false;
+	   
+   if(game->creatureSaySpell(player, text))
+       {
+         Spells = true;
+         }
+	
+//    if (player && Spells)
+//      {
+//           if(text == player->msgB)
+//           {
+//                return;
+//           }
+//      }	    
+//   if(game->creatureSaySpell(player, text))
+//       {
+//         Spells = true;
+//          	     type = SPEAK_MONSTER1;
+//       	         player->msgB = text;
+//        }
+        
+#ifdef REX_MUTED
+                  //Muted System by ReX
+            if (player && !Spells && type == SPEAK_SAY && g_config.getGlobalString("mutedsystem","no") == "yes"){
+            if(!player->MutedSystem())
+            return;
+            }
+#endif //REX_MUTED  
 
-	if(game->creatureSaySpell(player, text))
-		type = SPEAK_SAY;
+if(player && Spells){
+if(player->msgBT >= 1000)
+{return;}
+else{
+type = SPEAK_MONSTER1;
+player->msgBT = 3000;
+}
+}
+//else{
 
+//}
+	
 	switch (type)
 	{
+    case SPEAK_MONSTER1:
+        game->creatureSay(player, type, text);
+        break;
 	case SPEAK_SAY:
 		game->creatureSay(player, type, text);
 		break;
@@ -1414,39 +1934,67 @@ void Protocol76::parseSay(NetworkMessage &msg)
 	case SPEAK_CHANNEL_Y:
 	case SPEAK_CHANNEL_R1:
 	case SPEAK_CHANNEL_R2:
+    case SPEAK_CHANNEL_O:     
 		game->creatureTalkToChannel(player, type, text, channelId);
 		break;
 	case SPEAK_BROADCAST:
 		game->creatureBroadcastMessage(player, text);
 		break;
+#ifdef SDG_VIOLATIONS		
+	case SPEAK_CHANNEL_RV1:
+        addViolation(player, text);
+        break;
+    case SPEAK_CHANNEL_RV2:
+	speakToReporter(receiver, text);
+	break;
+    case SPEAK_CHANNEL_RV3:
+        speakToCounsellor(text);
+	break;
+#endif
 	}
 }
 
+#ifdef BD_FOLLOW
+void Protocol76::parseAttack(NetworkMessage &msg)
+{
+    unsigned long creatureid = msg.GetU32();
+    if(game && player){
+       game->playerSetAttackedCreature(player, creatureid);
+       if(player->followMode != 0){
+          game->playerSetFollowCreature(player, creatureid);
+       }else
+          game->playerSetFollowCreature(player, 0);
+    }
+}
+#else
 void Protocol76::parseAttack(NetworkMessage &msg)
 {
 	unsigned long creatureid = msg.GetU32();
 	game->playerSetAttackedCreature(player, creatureid);
 }
+#endif //BD_FOLLOW
+
+#ifdef BD_FOLLOW
+void Protocol76::parseFollow(NetworkMessage &msg)
+{
+unsigned long creatureid = msg.GetU32();
+game->playerSetFollowCreature(player, creatureid);
+}
+#endif //BD_FOLLOW
 
 void Protocol76::parseTextWindow(NetworkMessage &msg)
 {
-	unsigned long id = msg.GetU32();
-	std::string new_text = msg.GetString();
-	if(readItem && windowTextID == id){
-		sendTextMessage(MSG_SMALLINFO, "Write not working yet.");
-		//move to Game, and use gameLock
-		/*//TODO: check that the item is in
-		//an accesible place for the player
-		unsigned short itemid = readItem->getID();
-		readItem->setText(new_text);
-		if(readItem->getID() != id){
-		//TODO:update the item in the clients.
-		//Can be done when find a method to get
-		// items position its pointer.
-	}*/
-		readItem->releaseThing();
-		readItem = NULL;
-	}
+unsigned long id = msg.GetU32();
+std::string new_text = msg.GetString();
+if(readItem && windowTextID == id)
+{
+readItem->setText(new_text);
+#ifdef SMYG_GETWRITER
+readItem->setWriter(player->getName());
+#endif //SMYG_GETWRITER
+readItem->releaseThing();
+readItem = NULL;
+}
 }
 
 void Protocol76::parseRequestTrade(NetworkMessage &msg)
@@ -1455,7 +2003,7 @@ void Protocol76::parseRequestTrade(NetworkMessage &msg)
 	unsigned short itemid = msg.GetItemId();
 	unsigned char stack = msg.GetByte();
 	unsigned long playerid = msg.GetU32();
-
+	
 	game->playerRequestTrade(player, pos, stack, itemid, playerid);
 }
 
@@ -1468,7 +2016,7 @@ void Protocol76::parseLookInTrade(NetworkMessage &msg)
 {
 	bool counterOffer = (msg.GetByte() == 0x01);
 	int index = msg.GetByte();
-
+	
 	game->playerLookInTrade(player, counterOffer, index);
 }
 
@@ -1496,19 +2044,19 @@ void Protocol76::parseRotateItem(NetworkMessage &msg)
 	Position pos = msg.GetPosition();
 	unsigned short itemid = msg.GetItemId();
 	unsigned char stackpos = msg.GetByte();
-
+	
 	game->playerRotateItem(player, pos, stackpos, itemid);
-
+	
 }
 
 bool Protocol76::CanSee(int x, int y, int z) const
 {
 #ifdef __DEBUG__
 	if(z < 0 || z >= MAP_LAYER) {
-		std::cout << "WARNING! Protocol76::CanSee() Z-value is out of range!" << std::endl;
+		std::cout << "Uwaga! Protocol76::CanSee() Z-value jest po za zasiegiem!" << std::endl;
 	}
 #endif
-
+	
 	/*underground 8->15*/
 	if(player->pos.z > 7 && z < 6 /*8 - 2*/) {
 		return false;
@@ -1517,14 +2065,14 @@ bool Protocol76::CanSee(int x, int y, int z) const
 	else if(player->pos.z <= 7 && z > 7){
 		return false;
 	}
-
+	
 	//negative offset means that the action taken place is on a lower floor than ourself
 	int offsetz = player->pos.z - z;
-
+	
 	if ((x >= player->pos.x - 8 + offsetz) && (x <= player->pos.x + 9 + offsetz) &&
 		(y >= player->pos.y - 6 + offsetz) && (y <= player->pos.y + 7 + offsetz))
 		return true;
-
+	
 	return false;
 }
 
@@ -1532,7 +2080,7 @@ bool Protocol76::CanSee(const Creature *c) const
 {
 	if(c->isRemoved == true)
 		return false;
-
+	
 	return CanSee(c->pos.x, c->pos.y, c->pos.z);
 }
 
@@ -1548,12 +2096,12 @@ void Protocol76::AddTileUpdated(NetworkMessage &msg, const Position &pos)
 #endif
 
 	if (CanSee(pos.x, pos.y, pos.z))
-	{
+	{		
 		msg.AddByte(0x69);
 		msg.AddPosition(pos);
-
+		
 		Tile* tile = game->getTile(pos.x, pos.y, pos.z);
-		if(tile)
+		if(tile) 
 		{
 #ifdef TRS_GM_INVISIBLE
 			GetTileDescription(tile, msg, player);
@@ -1573,7 +2121,7 @@ void Protocol76::AddTileUpdated(NetworkMessage &msg, const Position &pos)
 void Protocol76::sendTileUpdated(const Position &pos)
 {
 	NetworkMessage msg;
-
+	
 	AddTileUpdated(msg, pos);
 	WriteBuffer(msg);
 }
@@ -1585,15 +2133,15 @@ void Protocol76::sendThingMove(const Creature *creature, const Container *fromCo
 	if(player->NeedUpdateStats()) {
 		player->sendStats();
 	}
-
+	
 	NetworkMessage msg;
-
+	
 	//Auto-close container's
 	const Container* moveContainer = dynamic_cast<const Container*>(fromItem);
 	if(moveContainer){
 		bool hasToContainerOpen = false;
 		Position toMapPos = toContainer->getTopParent()->pos;
-
+		
 		if(toMapPos.x != 0xFFFF && std::abs(player->pos.x - toMapPos.x) <= 1 && std::abs(player->pos.y - toMapPos.y) <= 1) {
 			for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
 
@@ -1617,97 +2165,97 @@ void Protocol76::sendThingMove(const Creature *creature, const Container *fromCo
 				}
 			}
 		}
-
+		
 		if(!hasToContainerOpen && !player->isHoldingContainer(toContainer)) {
 			autoCloseContainers(moveContainer, msg);
 		}
 	}
-
+	
 	Item *container = NULL;
 	for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
 		container  = cit->second;
 		unsigned char cid = cit->first;
-
+		
 		if(container && container == fromContainer) {
 			if(toContainer == fromContainer) {
 				if(fromItem->isStackable()) {
 					if(toItem && fromItem->getID() == toItem->getID() && toItem->getItemCountOrSubtype() != oldToCount) {
-						//update count
+						//update count						
 						TransformItemContainer(msg,cid,to_slotid,toItem);
-
+						
 						if(fromItem->getItemCountOrSubtype() > 0 && count != oldFromCount) {
-							//update count
+							//update count							
 							TransformItemContainer(msg,cid,from_slotid,fromItem);
 						}
 						else {
-							//remove item
+							//remove item							
 							RemoveItemContainer(msg,cid,from_slotid);
 						}
-
+						
 						//surplus items
 						if(oldToCount + count > 100) {
-							//add item
+							//add item														
 							AddItemContainer(msg,cid,fromItem,oldToCount + count - 100);
 						}
 					}
 					else {
 						if(count == oldFromCount) {
-							//remove item
+							//remove item							
 							RemoveItemContainer(msg,cid,from_slotid);
 						}
 						else {
-							//update count
+							//update count							
 							TransformItemContainer(msg,cid,from_slotid,fromItem);
 						}
-
-						//add item
+						
+						//add item						
 						AddItemContainer(msg,cid,fromItem,count);
 					}
 				}
 				else {
-					//remove item
+					//remove item					
 					RemoveItemContainer(msg,cid,from_slotid);
-
-					//add item
+					
+					//add item					
 					AddItemContainer(msg,cid,fromItem);
 				}
 			}
 			else {
 				if(fromItem->isStackable() && fromItem->getItemCountOrSubtype() > 0 && count != oldFromCount) {
-					//update count
+					//update count					
 					TransformItemContainer(msg,cid,from_slotid,fromItem);
 				}
 				else {
-					//remove item
+					//remove item					
 					RemoveItemContainer(msg,cid,from_slotid);
 				}
 			}
 		}
-
+		
 		if(container && container == toContainer && toContainer != fromContainer) {
 			if(fromItem->isStackable()) {
 				if(toItem && fromItem->getID() == toItem->getID() && toItem->getItemCountOrSubtype() != oldToCount) {
-					//update count
+					//update count					
 					TransformItemContainer(msg,cid,to_slotid,toItem);
-
+					
 					//surplus items
 					if(oldToCount + count > 100) {
-						//add item
+						//add item						
 						AddItemContainer(msg,cid,fromItem,oldToCount + count - 100);
 					}
 				}
 				else {
-					//add item
+					//add item					
 					AddItemContainer(msg,cid,fromItem,count);
 				}
 			}
 			else {
-				//add item
+				//add item				
 				AddItemContainer(msg,cid,fromItem);
 			}
 		}
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -1718,36 +2266,36 @@ void Protocol76::sendThingMove(const Creature *creature, slots_t fromSlot, const
 	if(player->NeedUpdateStats()) {
 		player->sendStats();
 	}
-
+	
 	NetworkMessage msg;
-
+	
 	for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
 		if(cit->second == toContainer) {
 			unsigned char cid = cit->first;
-
+			
 			if(fromItem->isStackable()) {
 				if(toItem && fromItem->getID() == toItem->getID() && toItem->getItemCountOrSubtype() != oldToCount) {
-					//update count
+					//update count					
 					TransformItemContainer(msg,cid,to_slotid,toItem);
-
+					
 					//surplus items
 					if(oldToCount + count > 100) {
-						//add item
+						//add item						
 						AddItemContainer(msg,cid,fromItem,oldToCount + count - 100);
 					}
 				}
 				else {
-					//add item
+					//add item					
 					AddItemContainer(msg,cid,fromItem,count);
 				}
 			}
 			else {
-				//add item
+				//add item				
 				AddItemContainer(msg,cid,fromItem);
 			}
 		}
 	}
-
+	
 	if(creature == player) {
 		AddPlayerInventoryItem(msg,player, fromSlot);
 
@@ -1762,7 +2310,7 @@ void Protocol76::sendThingMove(const Creature *creature, slots_t fromSlot, const
 		}
 		//
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -1775,11 +2323,11 @@ void Protocol76::sendThingMove(const Creature *creature, slots_t fromSlot, const
 		if(player->NeedUpdateStats()) {
 			player->sendStats();
 		}
-
+		
 		AddPlayerInventoryItem(msg, player, fromSlot);
 		AddPlayerInventoryItem(msg, player, toSlot);
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -1790,29 +2338,29 @@ void Protocol76::sendThingMove(const Creature *creature, const Container *fromCo
 	if(player->NeedUpdateStats()) {
 		player->sendStats();
 	}
-
+	
 	NetworkMessage msg;
-
+	
 	for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
 		if(cit->second == fromContainer) {
 			unsigned char cid = cit->first;
-
+			
 			if(!fromItem->isStackable() || (oldFromCount == count && oldToCount + count <= 100)) {
-				//remove item
+				//remove item				
 				RemoveItemContainer(msg,cid,from_slotid);
 			}
 			else {
-				//update count
+				//update count				
 				TransformItemContainer(msg,cid,from_slotid,fromItem);
 			}
-
+			
 			if(toItem && toItem->getID() != fromItem->getID()) {
-				//add item
+				//add item				
 				AddItemContainer(msg,cid,toItem);
 			}
 		}
 	}
-
+	
 	if(creature == player) {
 		AddPlayerInventoryItem(msg,player, toSlot);
 
@@ -1833,7 +2381,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Container *fromCo
 			autoCloseContainers(moveContainer, msg);
 		}
 	}
-
+		
 	WriteBuffer(msg);
 }
 
@@ -1844,7 +2392,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Container *fromCo
 	if(player->NeedUpdateStats()) {
 		player->sendStats();
 	}
-
+	
 	NetworkMessage msg;
 
 	//Auto-close container's
@@ -1854,7 +2402,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Container *fromCo
 	if(moveContainer) {
 		//Auto-close container's
 		if(std::abs(player->pos.x - toPos.x) > 1 || std::abs(player->pos.y - toPos.y) > 1) {
-			autoCloseContainers(moveContainer, msg);
+			autoCloseContainers(moveContainer, msg);			
 		}
 		else
 			updateContainerArrow = true;
@@ -1873,22 +2421,22 @@ void Protocol76::sendThingMove(const Creature *creature, const Container *fromCo
 				msg.AddItem(fromItem);
 		}
 	}
-
+	
 	for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
 		unsigned char cid = cit->first;
 		if(cit->second == fromContainer) {
-
+			
 			if(!fromItem->isStackable() || fromItem->getItemCountOrSubtype() == 0 || count == oldFromCount) {
-				//remove item
+				//remove item				
 				RemoveItemContainer(msg,cid,from_slotid);
 			}
 			else {
-				//update count
+				//update count				
 				TransformItemContainer(msg,cid,from_slotid,fromItem);
 			}
 		}
 	}
-
+	
 	//Update up-arrow
 	if(updateContainerArrow) {
 		const Container* moveContainer = dynamic_cast<const Container*>(fromItem);
@@ -1901,7 +2449,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Container *fromCo
 		}
 	}
 	//
-
+	
 	WriteBuffer(msg);
 }
 
@@ -1910,22 +2458,22 @@ void Protocol76::sendThingMove(const Creature *creature, slots_t fromSlot,
 							   const Item* fromItem, int oldFromCount, const Position &toPos, const Item *toItem, int oldToCount, int count)
 {
 	NetworkMessage msg;
-
+	
 	if(creature == player) {
 		if(player->NeedUpdateStats()) {
 			player->sendStats();
 		}
-
+		
 		//Auto-closing containers
 		const Container* moveContainer = dynamic_cast<const Container*>(fromItem);
 		if(moveContainer) {
 			//Auto-close container's
 			if(std::abs(player->pos.x - toPos.x) > 1 || std::abs(player->pos.y - toPos.y) > 1) {
-				autoCloseContainers(moveContainer, msg);
+				autoCloseContainers(moveContainer, msg);			
 			}
 		}
 	}
-
+	
 	if(CanSee(toPos.x, toPos.y, toPos.z)) {
 		if(toItem && toItem->getID() == fromItem->getID() && fromItem->isStackable() && toItem->getItemCountOrSubtype() != oldToCount) {
 			AddTileUpdated(msg, toItem->pos);
@@ -1939,11 +2487,11 @@ void Protocol76::sendThingMove(const Creature *creature, slots_t fromSlot,
 				msg.AddItem(fromItem);
 		}
 	}
-
+	
 	if(creature == player) {
 		AddPlayerInventoryItem(msg, player, fromSlot);
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -1954,16 +2502,16 @@ void Protocol76::sendThingMove(const Creature *creature, const Position &fromPos
 	if(player->NeedUpdateStats()) {
 		player->sendStats();
 	}
-
+	
 	NetworkMessage msg;
-
+	
 	//Auto-closing containers
 	const Container* moveContainer = dynamic_cast<const Container*>(fromItem);
 	bool updateContainerArrow = false;
 	if(moveContainer) {
 		bool hasToContainerOpen = false;
 		Position toMapPos = toContainer->getTopParent()->pos;
-
+		
 		if(toMapPos.x != 0xFFFF && std::abs(player->pos.x - toMapPos.x) <= 1 && std::abs(player->pos.y - toMapPos.y) <= 1) {
 			for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit){
 
@@ -1987,7 +2535,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Position &fromPos
 				}
 			}
 		}
-
+		
 		if(!hasToContainerOpen && !player->isHoldingContainer(toContainer)){
 			autoCloseContainers(moveContainer, msg);
 		}
@@ -1995,7 +2543,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Position &fromPos
 			updateContainerArrow = true;
 	}
 	//
-
+	
 	if(CanSee(fromPos.x, fromPos.y, fromPos.z)) {
 		if(!fromItem->isStackable() || (oldFromCount == count && oldToCount + count <= 100)) {
 			AddRemoveThing(msg, fromPos, stackpos);
@@ -2003,48 +2551,48 @@ void Protocol76::sendThingMove(const Creature *creature, const Position &fromPos
 		else
 			AddTileUpdated(msg, fromPos);
 	}
-
+	
 	Container *container = NULL;
 	for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
 		container = cit->second;
 		if(container == toContainer) {
 			unsigned char cid = cit->first;
-
+			
 			if(fromItem->isStackable()) {
 				if(toItem && fromItem->getID() == toItem->getID() && toItem->getItemCountOrSubtype() != oldToCount) {
-					//update count
+					//update count					
 					TransformItemContainer(msg,cid,to_slotid,toItem);
-
+					
 					//surplus items
 					if(oldToCount + count > 100) {
-						//add item
+						//add item						
 						AddItemContainer(msg,cid,fromItem,oldToCount + count - 100);
 					}
 				}
 				else {
-					//add item
+					//add item					
 					AddItemContainer(msg,cid,fromItem,count);
 				}
 			}
 			else {
-				//add item
+				//add item				
 				AddItemContainer(msg,cid,fromItem);
 			}
 		}
 	}
-
+	
 	if(updateContainerArrow) {
 		const Container* moveContainer = dynamic_cast<const Container*>(fromItem);
 		if(moveContainer) {
 			for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
-
+				
 				if(cit->second == moveContainer) {
 					sendContainer(cit->first, cit->second);
 				}
 			}
 		}
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -2055,9 +2603,9 @@ void Protocol76::sendThingMove(const Creature *creature, const Position &fromPos
 	if(player->NeedUpdateStats()) {
 		player->sendStats();
 	}
-
+	
 	NetworkMessage msg;
-
+	
 	if(creature == player) {
 		AddPlayerInventoryItem(msg, player, toSlot);
 	}
@@ -2065,14 +2613,14 @@ void Protocol76::sendThingMove(const Creature *creature, const Position &fromPos
 		//Auto-closing containers
 		const Container* moveContainer = dynamic_cast<const Container*>(fromItem);
 		if(moveContainer) {
-			autoCloseContainers(moveContainer, msg);
+			autoCloseContainers(moveContainer, msg);						
 		}
 	}
-
+	
 	if(CanSee(fromPos.x, fromPos.y, fromPos.z)) {
 		if(!fromItem->isStackable() || (oldFromCount == count && oldToCount + count <= 100)) {
 			AddRemoveThing(msg, fromPos, stackpos);
-
+			
 			if(toItem && (!toItem->isStackable() || toItem->getID() != fromItem->getID())) {
 				AddAppearThing(msg, fromPos);
 				msg.AddItem(toItem);
@@ -2081,7 +2629,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Position &fromPos
 		else
 			AddTileUpdated(msg, fromPos);
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -2090,23 +2638,23 @@ void Protocol76::sendThingMove(const Creature *creature, const Thing *thing,
 							   const Position *oldPos, unsigned char oldStackPos, unsigned char oldcount, unsigned char count, bool tele)
 {
 	NetworkMessage msg;
-
+	
 	const Creature* c = dynamic_cast<const Creature*>(thing);
 	if(c && c->isRemoved)
 		return;
-
+	
 	if (!tele && c && (CanSee(oldPos->x, oldPos->y, oldPos->z)) && (CanSee(thing->pos.x, thing->pos.y, thing->pos.z)))
 	{
 		msg.AddByte(0x6D);
 		msg.AddPosition(*oldPos);
 		msg.AddByte(oldStackPos);
 		msg.AddPosition(thing->pos);
-
+		
 		Tile *fromTile = game->getTile(oldPos->x, oldPos->y, oldPos->z);
 		if(fromTile && fromTile->getThingCount() > 8) {
 			//We need to pop up this item
 			Thing *newthing = fromTile->getThingByStackPos(9);
-
+			
 			if(newthing != NULL) {
 				AddTileUpdated(msg, *oldPos);
 			}
@@ -2118,10 +2666,10 @@ void Protocol76::sendThingMove(const Creature *creature, const Thing *thing,
 		{
 			AddRemoveThing(msg,*oldPos,oldStackPos);
 		}
-
+		
 		if (!(tele && thing == this->player) && CanSee(thing->pos.x, thing->pos.y, thing->pos.z))
 		{
-			AddAppearThing(msg,thing->pos);
+			AddAppearThing(msg,thing->pos);      
 			if (c) {
 				bool known;
 				unsigned long removedKnown;
@@ -2130,7 +2678,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Thing *thing,
 			}
 			else {
 				msg.AddItem((Item*)thing);
-
+				
 				//Auto-close container's
 				const Container* moveContainer = dynamic_cast<const Container*>(thing);
 				if(moveContainer){
@@ -2141,7 +2689,7 @@ void Protocol76::sendThingMove(const Creature *creature, const Thing *thing,
 			}
 		}
 	}
-
+	
 	if (thing == this->player) {
 #ifdef TRS_GM_INVISIBLE
 		if(tele){
@@ -2167,11 +2715,11 @@ void Protocol76::sendThingMove(const Creature *creature, const Thing *thing,
 		}
 #else //TRS_GM_INVISIBLE
 		if(tele){
-			msg.AddByte(0x64);
-			msg.AddPosition(player->pos);
-			GetMapDescription(player->pos.x-8, player->pos.y-6, player->pos.z, 18, 14, msg);
+			msg.AddByte(0x64); 
+			msg.AddPosition(player->pos); 
+			GetMapDescription(player->pos.x-8, player->pos.y-6, player->pos.z, 18, 14, msg); 
 		}
-		else{
+		else{               
 			if (oldPos->y > thing->pos.y) { // north, for old x
 				msg.AddByte(0x65);
 				GetMapDescription(oldPos->x - 8, thing->pos.y - 6, thing->pos.z, 18, 1, msg);
@@ -2193,24 +2741,24 @@ void Protocol76::sendThingMove(const Creature *creature, const Thing *thing,
 		std::vector<Container *> containers;
 		for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
 			Container *container = cit->second;
-
+			
 			while(container->getParent()) {
 				container = container->getParent();
 			}
-
+			
 			//Only add those we need to close
-			if(container->pos.x != 0xFFFF) {
+			if(container->pos.x != 0xFFFF) {				
 				if(std::abs(player->pos.x - container->pos.x) > 1 || std::abs(player->pos.y - container->pos.y) > 1 || player->pos.z != container->pos.z) {
 					containers.push_back(cit->second);
 				}
 			}
 		}
-
+		
 		for(std::vector<Container *>::const_iterator it = containers.begin(); it != containers.end(); ++it) {
 			autoCloseContainers(*it, msg);
 		}
-	}
-
+	}	
+	
 	WriteBuffer(msg);
 }
 
@@ -2226,16 +2774,16 @@ void Protocol76::autoCloseContainers(const Container *container, NetworkMessage 
 				containerlist.push_back(cit->first);
 				break;
 			}
-
+			
 			tmpcontainer = tmpcontainer->getParent();
 		}
 	}
-
+	
 	for(std::vector<unsigned char>::iterator it = containerlist.begin(); it != containerlist.end(); ++it) {
 		player->closeContainer(*it);
 		msg.AddByte(0x6F);
 		msg.AddByte(*it);
-	}
+	}						
 }
 
 void Protocol76::sendCreatureTurn(const Creature *creature, unsigned char stackPos)
@@ -2243,11 +2791,11 @@ void Protocol76::sendCreatureTurn(const Creature *creature, unsigned char stackP
 	if (CanSee(creature))
 	{
 		NetworkMessage msg;
-
+		
 		msg.AddByte(0x6B);
 		msg.AddPosition(creature->pos);
-		msg.AddByte(stackPos);
-
+		msg.AddByte(stackPos); 
+		
 		msg.AddByte(0x63);
 		msg.AddByte(0x00);
 		msg.AddU32(creature->getID());
@@ -2260,14 +2808,40 @@ void Protocol76::sendCreatureTurn(const Creature *creature, unsigned char stackP
 void Protocol76::sendCreatureSay(const Creature *creature, SpeakClasses type, const std::string &text)
 {
 	NetworkMessage msg;
-	AddCreatureSpeak(msg,creature, type, text, 0);
+//bbk anty spam
+        if(player->msgTicks != 0) { return; }
+//        if(player->msgBT <= 0) { return; }
+//bbk anty spam
+        if(text == player->msgTmp) return;
+        else
+        {
+	AddCreatureSpeak(msg,creature, player, type, text, 0);
 	WriteBuffer(msg);
+        player->msgTmp = text;
+        }
+
 }
 
 void Protocol76::sendToChannel(const Creature * creature, SpeakClasses type, const std::string &text, unsigned short channelId){
 	NetworkMessage msg;
-	AddCreatureSpeak(msg,creature, type, text, channelId);
+//bbk anty spam
+        if(player->msgTicks != 0) { return; }
+//        if(player->msgBT <= 0) { return; }
+//bbk anty spam
+        if(text == player->msgTmp) return;
+        else
+        {
+	AddCreatureSpeak(msg,creature, player, type, text, channelId);
 	WriteBuffer(msg);
+        player->msgTmp = text;
+        }
+}
+
+void Protocol76::sendFromSys(SpeakClasses type, const std::string &text){
+//void Protocol76::sendFromSys(SpeakClasses type, const char &text){
+    NetworkMessage newmsg;
+    AddSystemSpeak(newmsg, type, text, 0x08);  
+    WriteBuffer(newmsg);
 }
 
 void Protocol76::sendCancel(const char *msg)
@@ -2288,7 +2862,7 @@ void Protocol76::sendChangeSpeed(const Creature *creature)
 {
 	NetworkMessage netmsg;
 	netmsg.AddByte(0x8F);
-
+	
 	netmsg.AddU32(creature->getID());
 	netmsg.AddU16(creature->getSpeed());
 	WriteBuffer(netmsg);
@@ -2310,22 +2884,22 @@ void Protocol76::sendThingDisappear(const Thing *thing, unsigned char stackPos, 
 	if(player->getTradeItem() && dynamic_cast<const Item*>(thing) == player->getTradeItem()) {
 		game->playerCloseTrade(player);
 	}
-
+	
 	if(creature && creature->isRemoved)
 		return;
-
-	if(!tele) {
+	
+	if(!tele) {		
 		if(creature && creature->health > 0){
 			const Player* remove_player = dynamic_cast<const Player*>(creature);
 			if(remove_player == player)
 				return;
-
+			
 			if(CanSee(creature)){
 				AddMagicEffect(msg,thing->pos, NM_ME_PUFF);
 			}
 		}
 	}
-
+	
 	if(CanSee(thing->pos.x, thing->pos.y, thing->pos.z)) {
 		AddRemoveThing(msg,thing->pos, stackPos);
 		if(creature && stackPos > 9){
@@ -2340,7 +2914,7 @@ void Protocol76::sendThingDisappear(const Thing *thing, unsigned char stackPos, 
 			}
 		}
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -2352,23 +2926,43 @@ void Protocol76::sendThingAppear(const Thing *thing){
 		if(add_player == player){
 			msg.AddByte(0x0A);
 			msg.AddU32(player->getID());
-
+			
 			msg.AddByte(0x32);
 			msg.AddByte(0x00);
-
-			msg.AddByte(0x00); //can report bugs 0,1
-
-			/*msg.AddByte(0x0B);//TODO?. GM actions
-			  msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
-			  msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
-			  msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
-			  msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
-			  msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
-			  msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
-			  msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
-			  msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
-			*/
-
+			
+			//msg.AddByte(0x00); //can report bugs 0,1
+			
+#ifdef CTRL_Z
+						if(add_player->access >= g_config.ACCESS_BUGREPORT_CTRLZ){
+			msg.AddByte(1);
+			}
+			else
+			{
+msg.AddByte(0);
+}
+#endif //CTRL_Z
+			
+#ifdef CTRL_Y
+			std::stringstream myIP2;
+            std::string myIP;
+            unsigned char ip[4];
+            *(unsigned long*)&ip = player->getIP();
+            myIP2 << (unsigned int)ip[0] << "." << (unsigned int)ip[1] <<
+             "." << (unsigned int)ip[2] << "." << (unsigned int)ip[3];
+            myIP = myIP2.str();
+if(add_player->access >= 2){
+     msg.AddByte(0x0B);//TODO?. GM actions
+     msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
+     msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
+     msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
+     msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
+     msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
+     msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
+msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
+     msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);msg.AddByte(0xFF);
+        }
+#endif //CTRL_Y
+			
 			msg.AddByte(0x64);
 			msg.AddPosition(player->pos);
 #ifdef TRS_GM_INVISIBLE
@@ -2377,9 +2971,9 @@ void Protocol76::sendThingAppear(const Thing *thing){
 			GetMapDescription(player->pos.x-8, player->pos.y-6, player->pos.z, 18, 14, msg);
 #endif //TRS_GM_INVISIBLE
 			AddMagicEffect(msg,player->pos, NM_ME_ENERGY_AREA);
-
-			AddPlayerStats(msg,player);
-
+			
+			AddPlayerStats(msg,player);	
+			
 			msg.AddByte(0x82);
 #ifdef CVS_DAY_CYCLE
 			msg.AddByte(game->getLightLevel());
@@ -2387,15 +2981,15 @@ void Protocol76::sendThingAppear(const Thing *thing){
 			msg.AddByte(0x6F); //LIGHT LEVEL
 #endif //CVS_DAY_CYCLE
 			msg.AddByte(0xD7);//light? (seems constant)
-
+			
 			/*msg.AddByte(0x8d);//8d
 			  msg.AddU32(player->getID());
 			  msg.AddByte(0x03);//00
 			  msg.AddByte(0xd7);//d7
 			*/
-
+			
 			AddPlayerSkills(msg,player);
-
+			
 			AddPlayerInventoryItem(msg,player, 1);
 			AddPlayerInventoryItem(msg,player, 2);
 			AddPlayerInventoryItem(msg,player, 3);
@@ -2406,30 +3000,39 @@ void Protocol76::sendThingAppear(const Thing *thing){
 			AddPlayerInventoryItem(msg,player, 8);
 			AddPlayerInventoryItem(msg,player, 9);
 			AddPlayerInventoryItem(msg,player, 10);
-
-			AddTextMessage(msg,MSG_EVENT, g_config.getGlobalString("loginmsg", "Welcome.").c_str());
+			
+NetworkMessage newmsg;
+newmsg.AddByte(0xAC);
+newmsg.AddU16(0x08);
+newmsg.AddString("Server Log");                      
+WriteBuffer(newmsg);
+			
+						if (player->skullType == SKULL_YELLOW)
+{
+player->skullType = SKULL_NONE;
+}
+			
+			AddTextMessage(msg,MSG_EVENT, g_config.getGlobalString("loginmsg", "Witaj!").c_str());
 			std::string tempstring;
-			tempstring = "Your last visit was on ";
+			tempstring = "Ostatnio byles zalogowany w ";
 			time_t lastlogin = player->getLastLoginSaved();
-#ifdef USING_VISUAL_2005
-			char buf[128];
-			ctime_s(buf, sizeof(buf), &lastlogin);
-			tempstring += buf;
-#else
+
 			tempstring += ctime(&lastlogin);
-#endif //USING_VISUAL_2005
 			tempstring.erase(tempstring.length() -1);
 			tempstring += ".";
 
+#ifdef DT_PREMMY
+			game->countPremmy(player);
+#endif //DT_PREMMY
 #ifdef YUR_CVS_MODS
 			if (lastlogin == 0)
-				AddTextMessage(msg,MSG_EVENT,"It is your first visit.");
+				AddTextMessage(msg,MSG_EVENT,"To twoja pierwsza wizyta na naszym ots'ie.");
 			else
 #endif //YUR_CVS_MODS
 				AddTextMessage(msg,MSG_EVENT, tempstring.c_str());
 
 			WriteBuffer(msg);
-
+			
 #ifdef ELEM_VIP_LIST
 			for(int i = 0; i < MAX_VIPS; i++)
 			{
@@ -2453,14 +3056,14 @@ void Protocol76::sendThingAppear(const Thing *thing){
 			for(VIPListSet::iterator it = player->VIPList.begin(); it != player->VIPList.end(); it++){
 				bool online;
 				std::string vip_name;
-
+				
 				if(IOPlayer::instance()->getNameByGuid((*it), vip_name)){
 					online = (game->getPlayerByName(vip_name) != NULL);
 					sendVIP((*it), vip_name, online);
 				}
 			}
 #endif //ELEM_VIP_LIST
-
+			
 			//force flush
 			flushOutputBuffer();
 			return;
@@ -2470,7 +3073,7 @@ void Protocol76::sendThingAppear(const Thing *thing){
 			unsigned long removedKnown;
 			checkCreatureAsKnown(creature->getID(), known, removedKnown);
 			AddAppearThing(msg,creature->pos);
-			AddCreature(msg,creature, known, removedKnown);
+			AddCreature(msg,creature, known, removedKnown);		
 			// login bubble
 			AddMagicEffect(msg,creature->pos, NM_ME_ENERGY_AREA);
 		}
@@ -2489,7 +3092,7 @@ void Protocol76::sendThingAppear(const Thing *thing){
 			}
 		}
 	}
-
+	
 	WriteBuffer(msg);
 }
 
@@ -2544,13 +3147,13 @@ void Protocol76::sendThingRemove(const Thing *thing){
 	if(player->getTradeItem() && dynamic_cast<const Item*>(thing) == player->getTradeItem()) {
 		game->playerCloseTrade(player);
 	}
-
+	
 	NetworkMessage msg;
 
 	//Auto-close container's
 	const Container* moveContainer = dynamic_cast<const Container *>(thing);
 	if(moveContainer) {
-		autoCloseContainers(moveContainer, msg);
+		autoCloseContainers(moveContainer, msg);		
 	}
 
 	WriteBuffer(msg);
@@ -2612,18 +3215,20 @@ void Protocol76::sendTextWindow(Item* item,const unsigned short maxlen, const bo
 	//msg.AddU16(item->getID());
 	msg.AddItemId(item);
 	if(canWrite){
-		msg.AddU16(maxlen);
-		msg.AddString(item->getText());
+		msg.AddU16(maxlen);		
+		msg.AddString(item->getText());		
 		item->useThing();
 		readItem = item;
 	}
-	else{
+	else{		
 		msg.AddU16((unsigned short)item->getText().size());
-		msg.AddString(item->getText());
-		readItem = NULL;
+		msg.AddString(item->getText());									
+		readItem = NULL;		
 	}
-	msg.AddString("unknown");
-
+	#ifdef SMYG_GETWRITER
+	msg.AddString(item->getWriter());
+    #endif //SMYG_GETWRITER
+	
 	WriteBuffer(msg);
 }
 
@@ -2646,12 +3251,12 @@ void Protocol76::sendVIPLogOut(unsigned long guid)
 void Protocol76::sendVIP(unsigned long guid, const std::string &name, bool isOnline)
 {
 	NetworkMessage msg;
-
+	
 	msg.AddByte(0xD2);
 	msg.AddU32(guid);
 	msg.AddString(name);
 	msg.AddByte(isOnline == true ? 1 : 0);
-
+	
 	WriteBuffer(msg);
 }
 
@@ -2670,8 +3275,8 @@ void Protocol76::AddAnimatedText(NetworkMessage &msg,const Position &pos, unsign
 		std::cout << "Warning: 0-Length string in AddAnimatedText()" << std::endl;
 	}
 #endif
-
-	msg.AddByte(0x84);
+	
+	msg.AddByte(0x84); 
 	msg.AddPosition(pos);
 	msg.AddByte(color);
 	msg.AddString(text);
@@ -2688,7 +3293,7 @@ void Protocol76::AddMagicEffect(NetworkMessage &msg,const Position &pos, unsigne
 
 void Protocol76::AddDistanceShoot(NetworkMessage &msg,const Position &from, const Position &to, unsigned char type)
 {
-	msg.AddByte(0x85);
+	msg.AddByte(0x85); 
 	msg.AddPosition(from);
 	msg.AddPosition(to);
 	msg.AddByte(type+1);
@@ -2712,11 +3317,11 @@ void Protocol76::AddCreature(NetworkMessage &msg,const Creature *creature, bool 
 		msg.AddU32(creature->getID());
 		msg.AddString(creature->getName());
 	}
-
-	msg.AddByte(std::max(1LL, creature->health*100/creature->healthmax));
-
+	
+	msg.AddByte(std::max(1, creature->health*100/creature->healthmax));
+	
 	msg.AddByte((unsigned char)creature->getDirection());
-
+	
 #ifdef BD_ITEM_LOOK
 	if (creature->looktype > 1000)
 	{
@@ -2732,9 +3337,28 @@ void Protocol76::AddCreature(NetworkMessage &msg,const Creature *creature, bool 
 			msg.AddByte(0);
 			msg.AddU16(0);
 		}
-		else
+//		else
 #endif //YUR_INVISIBLE
+#ifdef CHAMELEON
+else if (creature->isInvisible())
 		{
+msg.AddByte(0x00);
+msg.AddByte(0x00);
+msg.AddByte(0x00);
+ }
+ else if(creature->itemID > 0){
+  msg.AddByte(0x00);
+  if(creature->getItemId() != 0) {
+                const ItemType &it = Item::items[creature->getItemId()];
+                msg.AddU16(it.clientId);
+            }
+            else {
+                msg.AddU16(0);
+            }
+ }
+#endif //CHAMELEON
+   else {
+//		{
 			msg.AddByte(creature->looktype);
 			msg.AddByte(creature->lookhead);
 			msg.AddByte(creature->lookbody);
@@ -2742,7 +3366,7 @@ void Protocol76::AddCreature(NetworkMessage &msg,const Creature *creature, bool 
 			msg.AddByte(creature->lookfeet);
 		}
 	}
-
+	
 #ifdef CVS_DAY_CYCLE
 	const Player* p = dynamic_cast<const Player*>(creature);
 	if (p)
@@ -2758,17 +3382,21 @@ void Protocol76::AddCreature(NetworkMessage &msg,const Creature *creature, bool 
 	}
 
 	msg.AddU16(creature->getSpeed());
-
+	
 #ifdef TLM_SKULLS_PARTY
 	Creature *ctarget = game->getCreatureByID(creature->getID());
 	Player*target=dynamic_cast<Player*>(ctarget);
 	std::vector<Player*>::iterator invited = std::find(player->invitedplayers.begin(), player->invitedplayers.end(), target);
 	std::vector<Player*>::iterator inviter = std::find(player->inviterplayers.begin(), player->inviterplayers.end(), target);
 
-	if(target && target->skullType == SKULL_NONE && target->party != 0 && player->party == target->party)
-		msg.AddByte(2);
-	else
+	if(creature->skullType == SKULL_WHITE || creature->skullType == SKULL_RED)
 		msg.AddByte(creature->skullType);
+	else if(target && target->skullType == SKULL_NONE && target->party != 0 && player->party == target->party)
+		msg.AddByte(2);
+    else if(target && target->skullType == SKULL_YELLOW && player->isYellowTo(target))
+        msg.AddByte(1); 
+    else 
+        msg.AddByte(0x00);  
 
 	if(target && target->party != 0 && player->party != 0 && target->party == player->party)
 	{
@@ -2776,7 +3404,7 @@ void Protocol76::AddCreature(NetworkMessage &msg,const Creature *creature, bool 
 			msg.AddByte(4);
 		else
 			msg.AddByte(3);
-	}
+	} 
 	else if(invited != player->invitedplayers.end())
 		msg.AddByte(2);
 	else if(inviter != player->inviterplayers.end())
@@ -2819,9 +3447,9 @@ void Protocol76::AddPlayerStats(NetworkMessage &msg,const Player *player)
 #endif //YUR_HIGH_LEVELS
 
 	msg.AddByte(player->getPlayerInfo(PLAYERINFO_LEVELPERCENT));
-	msg.AddU16(player->getMana() > std::numeric_limits<uint16_t>::max() ? 0:player->getMana());
-	msg.AddU16(player->getPlayerInfo(PLAYERINFO_MAXMANA) > std::numeric_limits<uint16_t>::max() ? 0:player->getPlayerInfo(PLAYERINFO_MAXMANA));
-	msg.AddByte(player->getMagicLevel() > std::numeric_limits<uint8_t>::max() ? 0:player->getMagicLevel());
+	msg.AddU16(player->getMana());
+	msg.AddU16(player->getPlayerInfo(PLAYERINFO_MAXMANA));
+	msg.AddByte(player->getMagicLevel());
 	msg.AddByte(player->getPlayerInfo(PLAYERINFO_MAGICLEVELPERCENT));
 	msg.AddByte(player->getPlayerInfo(PLAYERINFO_SOUL));
 }
@@ -2829,7 +3457,7 @@ void Protocol76::AddPlayerStats(NetworkMessage &msg,const Player *player)
 void Protocol76::AddPlayerSkills(NetworkMessage &msg,const Player *player)
 {
 	msg.AddByte(0xA1);
-
+	
 	msg.AddByte(player->getSkill(SKILL_FIST,   SKILL_LEVEL));
 	msg.AddByte(player->getSkill(SKILL_FIST,   SKILL_PERCENT));
 	msg.AddByte(player->getSkill(SKILL_CLUB,   SKILL_LEVEL));
@@ -2862,8 +3490,7 @@ void Protocol76::AddPlayerInventoryItem(NetworkMessage &msg,const Player *player
 	}
 }
 
-
-void Protocol76::AddCreatureSpeak(NetworkMessage &msg,const Creature *creature, SpeakClasses  type, std::string text, unsigned short channelId)
+void Protocol76::AddCreatureSpeakSay(NetworkMessage &msg,const Creature *creature, Player *player, SpeakClasses  type, std::string text, unsigned short channelId)
 {
 	msg.AddByte(0xAA);
 	msg.AddString(creature->getName());
@@ -2875,21 +3502,85 @@ void Protocol76::AddCreatureSpeak(NetworkMessage &msg,const Creature *creature, 
 	case SPEAK_MONSTER1:
 	case SPEAK_MONSTER2:
 		msg.AddPosition(creature->pos);
-		break;
+		break;	
 	case SPEAK_CHANNEL_Y:
 	case SPEAK_CHANNEL_R1:
+    case SPEAK_CHANNEL_O:     
 	case SPEAK_CHANNEL_R2:
 		msg.AddU16(channelId);
-		break;
+		break;	
 	}
-	msg.AddString(text);
+//	         std::stringstream t;
+//        t << "[" << player->getLevel() << "] ";
+//	msg.AddString(t.str());	
+//	msg.AddString(text);
+	
+	         std::stringstream t;
+        t << "[" << player->getLevel() << "] " << text;
+	msg.AddString(t.str());
+}
+
+
+void Protocol76::AddCreatureSpeak(NetworkMessage &msg,const Creature *creature, Player *player, SpeakClasses  type, std::string text, unsigned short channelId)
+{
+	msg.AddByte(0xAA);
+	msg.AddString(creature->getName());
+	msg.AddByte(type);
+	switch(type){
+	case SPEAK_SAY:
+	case SPEAK_WHISPER:
+	case SPEAK_YELL:
+	case SPEAK_MONSTER1:
+	case SPEAK_MONSTER2:
+		msg.AddPosition(creature->pos);
+		break;	
+	case SPEAK_CHANNEL_Y:
+	case SPEAK_CHANNEL_R1:
+    case SPEAK_CHANNEL_O:     
+	case SPEAK_CHANNEL_R2:
+		msg.AddU16(channelId);
+		break;	
+	}
+//	         std::stringstream t;
+//        t << "[" << player->getLevel() << "] ";
+//	msg.AddString(t.str());	
+//	msg.AddString(text);
+	
+//	         std::stringstream t;
+//        t << "[" << player->getLevel() << "] " << text;
+//	msg.AddString(t.str());
+
+msg.AddString(text);
+}
+
+void Protocol76::AddSystemSpeak(NetworkMessage &msg, SpeakClasses type, std::string text, unsigned short channelId)
+{
+    msg.AddByte(0xAA);
+    msg.AddString("System");
+    msg.AddByte(type);
+	switch(type){
+	case SPEAK_SAY:
+	case SPEAK_WHISPER:
+	case SPEAK_YELL:
+	case SPEAK_MONSTER1:
+	case SPEAK_MONSTER2:
+//		msg.AddPosition(creature->pos);
+//		break;	
+	case SPEAK_CHANNEL_Y:
+	case SPEAK_CHANNEL_R1:
+    case SPEAK_CHANNEL_O:     
+	case SPEAK_CHANNEL_R2:
+		msg.AddU16(channelId);
+		break;	
+	}
+    msg.AddString(text);
 }
 
 void Protocol76::AddCreatureHealth(NetworkMessage &msg,const Creature *creature)
 {
 	msg.AddByte(0x8C);
 	msg.AddU32(creature->getID());
-	msg.AddByte(std::max(1LL, creature->health*100/creature->healthmax));
+	msg.AddByte(std::max(1, creature->health*100/creature->healthmax));
 }
 
 void Protocol76::AddRemoveThing(NetworkMessage &msg, const Position &pos,unsigned char stackpos){
@@ -2907,12 +3598,12 @@ void Protocol76::AddRemoveThing(NetworkMessage &msg, const Position &pos,unsigne
 		//and will show the player as alive (0 hp).
 		//Solution: re-log.
 	}
-
+	
 	Tile *fromTile = game->getTile(pos.x, pos.y, pos.z);
 	if(fromTile && fromTile->getThingCount() > 8) {
 		//We need to pop up this item
 		Thing *newthing = fromTile->getThingByStackPos(9);
-
+		
 		if(newthing != NULL) {
 			AddTileUpdated(msg, pos);
 		}
@@ -2920,9 +3611,9 @@ void Protocol76::AddRemoveThing(NetworkMessage &msg, const Position &pos,unsigne
 }
 
 void Protocol76::AddAppearThing(NetworkMessage &msg, const Position &pos){
-	if(CanSee(pos.x, pos.y, pos.z)) {
+	if(CanSee(pos.x, pos.y, pos.z)) {		
 		msg.AddByte(0x6A);
-		msg.AddPosition(pos);
+		msg.AddPosition(pos);	
 	}
 }
 
@@ -2955,31 +3646,31 @@ void Protocol76::RemoveItemContainer(NetworkMessage &msg,unsigned char cid,unsig
 
 void Protocol76::flushOutputBuffer(){
 	OTSYS_THREAD_LOCK_CLASS lockClass(bufferLock, "Protocol76::flushOutputBuffer()");
-	//force writetosocket
+	//force writetosocket	
 	OutputBuffer.WriteToSocket(s);
 	OutputBuffer.Reset();
-
+	
 	return;
 }
 
 void Protocol76::WriteBuffer(NetworkMessage &add){
-
-	game->addPlayerBuffer(player);
-
+	
+	game->addPlayerBuffer(player);	
+	
 	OTSYS_THREAD_LOCK(bufferLock, "Protocol76::WriteBuffer")
 		if(OutputBuffer.getMessageLength() + add.getMessageLength() >= NETWORKMESSAGE_MAXSIZE - 16){
 			this->flushOutputBuffer();
-		}
-		OutputBuffer.JoinMessages(add);
-		OTSYS_THREAD_UNLOCK(bufferLock, "Protocol76::WriteBuffer")
+		}	
+		OutputBuffer.JoinMessages(add);	
+		OTSYS_THREAD_UNLOCK(bufferLock, "Protocol76::WriteBuffer")	
 			return;
 }
 
 
 #ifdef CVS_DAY_CYCLE
 void Protocol76::sendWorldLightLevel(unsigned char lightlevel, unsigned char color)
-{
-	NetworkMessage msg;
+{ 
+	NetworkMessage msg; 
 	msg.AddByte(0x82);
 	msg.AddByte(lightlevel);		 // 6F - Light level
 	msg.AddByte(color /*0xA7*/); // D7 - Light color
@@ -3023,6 +3714,79 @@ void Protocol76::parseHouseWindow(NetworkMessage& msg)
 
 
 #ifdef ELEM_VIP_LIST
+#ifdef _NG_BBK_VIP_SYSTEM__
+void Protocol76::elemParseAddVip(NetworkMessage &msg)
+{
+std::string name = msg.GetString();
+std::transform(name.begin(),name.end(), name.begin(), tolower);
+std::string Pname = player->getName();
+std::transform(Pname.begin(), Pname.end(), Pname.begin(), tolower);
+
+	Creature* c = game->getCreatureByName(name.c_str());
+	Player* p = dynamic_cast<Player*>(c);
+        std::ostringstream file;
+        std::string datadir = g_config.getGlobalString("datadir");
+		file << datadir << "players/" << name.c_str() << ".xml";
+		//file.str().c_str()
+//if(game->isPlayer(name.c_str())) {
+std::fstream plik;
+  plik.open(file.str().c_str(),std::ios::in|std::ios::out);
+  if(plik.good()==true) {
+   int success = 0;
+   for(int i = 1; i < MAX_VIPS; i++)
+   { 
+	   if(player->vip[i] != ""){
+		   std::string storedVIP = player->vip[i];
+		 std::transform(storedVIP.begin(),storedVIP.end(), storedVIP.begin(), tolower);
+		 if(storedVIP == name){			 
+			 player->sendCancel("This player is already on your list.");
+			   success = true;
+			   break;
+		   }
+	   }  
+   }
+
+   for(int i = 1; i < MAX_VIPS; i++)
+   { 
+	if(Pname == name || name == Pname){			 
+		player->sendCancel("You cannot add yourself.");
+		 success = true;
+		break;
+	   }  
+   }
+   
+    if(player->access == 0 && p->access > 0){
+                player->sendCancel("Nie mozesz dodac osoby z accessem powyzej 0.");
+                success = true;
+                 return;
+                }
+   
+   if(success == 0) {
+	   for(int i = 1; i < MAX_VIPS; i++)
+	   {
+		   if(player->vip[i] == ""){
+			   NetworkMessage msgs;
+			   msgs.AddByte(0xD2);
+			   msgs.AddU32(i+1);
+			   msgs.AddString(name);
+			   if(p)
+				   msgs.AddByte(0x01);
+			   else
+				   msgs.AddByte(0x02);
+			 
+			   msgs.WriteToSocket(s);
+			   player->vip[i] = name;
+			   success = true;
+			   break;
+		   }  
+	   }
+   }
+   if(success == 0)
+   player->sendCancel("Your VIP list is currently full, please remove some of your VIP's before adding more.");
+} else
+player->sendCancel("A player with that name does not exist.");
+}
+#else
 void Protocol76::elemParseAddVip(NetworkMessage &msg)
 {
 	std::string name = msg.GetString();
@@ -3057,6 +3821,7 @@ void Protocol76::elemParseAddVip(NetworkMessage &msg)
 	else
 		player->sendCancel("A player with that name does not exist.");
 }
+#endif //_NG_BBK_VIP_SYSTEM__
 
 void Protocol76::elemParseRemoveVip(NetworkMessage &msg)
 {
@@ -3223,3 +3988,369 @@ void Protocol76::parsePassLeadership(NetworkMessage &msg)
 	}
 }
 #endif //TLM_SKULLS_PARTY
+
+#ifdef MOVE_UP
+void Protocol76::sendThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
+          const Item* fromItem, Container *toContainer)
+{
+ if(player->NeedUpdateStats()) {
+  player->sendStats();
+ }
+ 
+ NetworkMessage msg;
+ 
+ if(fromContainer && fromContainer->pos.x != 0xFFFF) 
+ {
+  if(toContainer->pos.x != 0xFFFF) {
+   //Auto-close container's
+   if(std::abs(player->pos.x - toContainer->pos.x) > 1 || std::abs(player->pos.y - toContainer->pos.y) > 1) {
+    const Container *container = dynamic_cast<const Container*>(fromItem);
+    if(container) {    
+     autoCloseContainers(container, msg);
+    }
+   }
+  }
+  else
+  {
+   if(creature != player) {
+    const Container *container = dynamic_cast<const Container*>(fromItem);
+    if(container) {    
+     autoCloseContainers(container, msg);
+    }
+   }
+  }
+ }
+ 
+ Item *container = NULL;
+ for(containerLayout::const_iterator cit = player->getContainers(); cit != player->getEndContainer(); ++cit) {
+  container  = cit->second;
+  unsigned char cid = cit->first;
+  
+  if(container && container == fromContainer) {
+   if(toContainer == fromContainer) {
+     //remove item     
+     RemoveItemContainer(msg,cid,from_slotid);
+     
+     //add item     
+     AddItemContainer(msg,cid,fromItem);
+   }
+   else {
+     //remove item     
+     RemoveItemContainer(msg,cid,from_slotid);
+   }
+  }
+  
+  if(container && container == toContainer && toContainer != fromContainer) {
+    //add item    
+    AddItemContainer(msg,cid,fromItem);
+  }
+ }
+ 
+ WriteBuffer(msg);
+}
+#endif //MOVE_UP
+
+#ifdef CTRL_Y
+void Protocol76::parseGM(NetworkMessage &msg)
+{
+std::string name2 = msg.GetString();
+int reason = msg.GetByte();
+std::string comment = msg.GetString();
+int action = msg.GetByte();
+bool IPban = msg.GetByte();
+//std::transform(name2.begin(),name2.end(), name2.begin(), tolower);
+Creature *c = game->getCreatureByName(name2.c_str());
+Player *bannedPlayer = dynamic_cast<Player*>(c);
+if(player && bannedPlayer){
+std::stringstream myIP2;
+std::string myIP, Reason, Action;
+unsigned char ip[4];
+*(unsigned long*)&ip = bannedPlayer->getIP();
+myIP2 << (unsigned int)ip[0] << "." << (unsigned int)ip[1] <<
+     "." << (unsigned int)ip[2] << "." << (unsigned int)ip[3];
+myIP = myIP2.str();
+     if(player->access > bannedPlayer->access || myIP != "127.0.0.1"){
+         if(comment.size() > 0 && comment.size() < 9999){
+            switch(reason){
+             case 0: Reason = "Ofensywny Name"; break;
+             case 1: Reason = "Spamowanie"; break;
+             case 2: Reason = "Wysywanie Game-Mastera"; break;
+             case 3: Reason = "Destruktywne Zachowanie"; break;
+             case 4: Reason = "Nick nawiazuje do znanej osoby"; break;
+             case 5: Reason = "Udawanie gma"; break;
+             case 6: Reason = "Pisanie nie na temat"; break;
+             case 7: Reason = "Obrazliwe wyrazanie sie"; break;
+             case 8: Reason = "Uzywanie macro/botów itd"; break;
+             case 9: Reason = "Handel Postaciami"; break;
+             case 10: Reason = "Reklama"; break;
+             case 11: Reason = "Reklamowanie innego Ots'a"; break;
+             case 12: Reason = "Bledny Format nazwy postaci"; break;
+             case 13: Reason = "Oszukiwanie Game-Mastera"; break;
+             case 14: Reason = "Hakowanie kont/postaci"; break;
+             case 15: Reason = "Wykozystywanie bug'ów"; break;
+             case 16: Reason = "Free Items"; break;
+             case 17: Reason = "Posiadanie 2 domków"; break;
+             case 18: Reason = "Zly Nick"; break;
+             case 19: Reason = "Bezsensowna kombinacja liter"; break;  // softweare :> tibiarules :>:>:>
+             case 20: Reason = "Udostempnianie konta"; break;
+             case 21: Reason = "Handel/Wymiana Postaciami"; break;
+             case 22: Reason = "Zla postawa wobec Game-Mastera"; break;
+             case 23: Reason = "Grozenie GM'owi"; break;
+             case 24: Reason = "Niesluchanie Gm'a"; break;
+             case 25: Reason = "Nick utrudnia indyfikacje postaci"; break;
+             case 26: Reason = "Dzielenie konta"; break;
+             case 27: Reason = "Wysylanie bezsensownych raportow do gamemaster'a"; break;
+             case 28: Reason = "Wyzywanie innych"; break;
+             default: Reason = "Nieznana przyczyna"; break;
+            }
+            switch(action){
+             case 0: Action = "Notacja"; break;
+             case 1: Action = "Namelock"; break;
+             case 2: Action = "BanKonta"; break;
+             case 3: Action = "Namelock/BanKonta"; break;
+             case 4: Action = "BanKonta+OstatnieOstrzezenie"; break;
+             case 5: Action = "Namelock/BanKonta+OstatnieOstrzezenie"; break;
+             default: Action = "Nieznana akcja"; break;
+            }
+            std::stringstream Yourtxt;
+            Yourtxt << name2 << " zostal zbanowany z powodu: " << Reason << ".";
+            if(IPban)
+             Yourtxt << " Dostaje takze ban na IP na 1 dzien.";
+            player->sendTextMessage(MSG_INFO, Yourtxt.str().c_str());
+            
+     std::stringstream msg;
+      msg << name2 << " zostal zbanowany z powodu: " << Reason << "." << std::ends;
+      
+      AutoList<Player>::listiterator it = Player::listPlayer.list.begin();
+        while (it != Player::listPlayer.list.end())
+        {
+            (*it).second->sendTextMessage(MSG_RED_INFO, msg.str().c_str());
+            ++it;
+        }
+            game->banPlayer(bannedPlayer, Reason, Action, comment,IPban);
+            
+//
+char buf[64];
+		time_t ticks = time(0);
+#ifdef USING_VISUAL_2005
+		tm now;
+		localtime_s(&now, &ticks);
+		strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M", &now);
+#else
+		strftime(buf, sizeof(buf), "%d/%m/%Y %H:%M", localtime(&ticks));
+#endif //USING_VISUAL_2005
+		std::ofstream out("data/logs/bans.log", std::ios::app);
+		out << "[" << buf << "] " <<player->getName()  << " -> " << bannedPlayer->getName() << " zostal zbanowany za: " << Reason << ".<br>" << std::endl;
+		out.close();
+//
+            
+         }else
+            player->sendTextMessage(MSG_RED_INFO, "Twoj komentarz byl za dlugi lub za krotki.");
+     }else
+         player->sendTextMessage(MSG_RED_INFO, "Nie mozesz zbanowac kogos kto ma wyzsza range od ciebie.");
+}else
+     player->sendTextMessage(MSG_RED_INFO, "Gracz ktorego probujesz zbanowac nie jest online."); // tryed :> tibiarules :>:>:>
+}
+#endif //CTRL_Y
+#ifdef KICK_PLAYER
+void Protocol76::sendKick()
+{
+    closesocket(s);
+    s = 0;
+}
+#endif //KICK_PLAYER
+#ifdef SDG_VIOLATIONS
+// ...let the fun start...
+// True Violations handling -by- SumDumGuy
+// coded March 31 - April 1st 2006 
+// bombproofed and tested to death on Nuuberland - Apr 2-8 
+// - released to public + submitted for CVS inclusion Apr 8th -
+// PacketId bytes found by Vitor - 0x9D (recv) , 0xB1 (send)
+// all the rest and packet formats found by me >;)
+// - edit to desired protocol classname -
+
+void Protocol76::addViolation(Player* reporter, std::string message)
+{// reporter files report
+	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol75::addViolation()");
+    reporter->violationTime = OTSYS_TIME();
+    reporter->violationReport = message;
+    reporter->hasOpenViolation = true;
+    
+    game->openViolations.push_back(reporter);
+    
+    NetworkMessage msg;
+    msg.AddByte(0xAA);
+    msg.AddString(reporter->getName());
+    msg.AddByte(SPEAK_CHANNEL_RV1);
+    msg.AddU32(0x00000000); // cause its 0 secs since report ;p
+    msg.AddString(reporter->violationReport);
+    updateViolationsChannel(msg);
+}
+
+void Protocol76::removeViolation(std::string rname)
+{ // close off open violation - reporter logout/cancelled or gm answers
+	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol75::removeViolation()");
+    NetworkMessage msg;
+    Player* reporter = game->getPlayerByName(rname);
+    if (reporter && reporter->hasOpenViolation)
+    {
+        msg.AddByte(0xAF);
+        msg.AddString(rname);
+        updateViolationsChannel(msg);
+    
+        for(std::vector<Player*>::iterator it = game->openViolations.begin(); it != game->openViolations.end(); ++it) 
+        { // iterate thru vector and pop out the one matching this guy's
+            if ((*it) && (*it)->getName() == rname) // its 'ours'
+            {
+                (*it)->hasOpenViolation = false;
+                (*it)->violationName = "";
+                (*it)->violationTime = 0;
+                (*it)->violationReport = "";
+                game->openViolations.erase(it);
+                return; // leave or crash 
+            }
+        }
+    }
+}
+
+void Protocol76::cancelViolation(std::string rname)
+{// reporter cancels report
+	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol75::cancelViolation()");
+    NetworkMessage msg;
+    Player* gm = game->getPlayerByName(player->violationName);
+    if (gm)
+    { // has attached gm
+
+        msg.AddByte(0xB0); // lock gm's channel
+        msg.AddString(rname);
+        gm->sendNetworkMessage(&msg);
+        
+        gm->violationName = "";
+        player->violationName = "";
+    }
+    removeViolation(rname);
+    
+}
+
+void Protocol76::openViolation(NetworkMessage &msg)
+{ // gm answers report in violations window
+	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol75::openViolation()");
+    std::string rname = msg.GetString();
+    NetworkMessage newmsg;
+    
+    Player* reporter = game->getPlayerByName(rname);
+    if (reporter)
+    {
+        removeViolation(rname);
+        
+        reporter->violationName = player->getName();
+        player->violationName = rname;
+    }
+
+}
+
+void Protocol76::closeViolation(NetworkMessage &msg)
+{ // report done and gm closes their end
+	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol75::closeViolation()");
+    std::string rname = msg.GetString();
+    NetworkMessage newmsg;
+    
+    Player* reporter = game->getPlayerByName(rname);
+    
+    if (reporter)
+    {
+        if (reporter->hasOpenViolation) removeViolation(rname);
+        
+        newmsg.AddByte(0xB1);   // Vitor - packetid byte - locks reporters channel
+        reporter->sendNetworkMessage(&newmsg);
+
+        reporter->violationName = "";
+        player->violationName = "";
+    }
+    
+}
+
+void Protocol76::speakToReporter(std::string rname, std::string message)
+{ // gm/couns to reportee
+	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol75::speakToReporter()");
+    NetworkMessage newmsg;
+    Player* reporter = game->getPlayerByName(rname);
+    
+    if (reporter)
+    {// send message
+        newmsg.AddByte(0xAA);
+        newmsg.AddString("Counsellor");
+        newmsg.AddByte(SPEAK_CHANNEL_RV2);
+        newmsg.AddString(message);
+        reporter->sendNetworkMessage(&newmsg);
+    // send status text 
+        newmsg.Reset();
+        newmsg.AddByte(0xB4);
+        newmsg.AddByte(MSG_SMALLINFO);
+        std::stringstream ss;
+        ss << "Message sent to " << reporter->getName() << ".";
+        newmsg.AddString(ss.str());
+        WriteBuffer(newmsg);
+    }
+   
+}
+
+void Protocol76::speakToCounsellor(std::string message)
+{ // reportee to couns/gm
+	OTSYS_THREAD_LOCK_CLASS lockClass(game->gameLock, "Protocol75::speakToCounsellor()");
+    NetworkMessage newmsg;
+    Player* gm = game->getPlayerByName(player->violationName);
+    
+    if (gm)
+    {
+        newmsg.AddByte(0xAA);
+        newmsg.AddString(player->getName());
+        newmsg.AddByte(SPEAK_CHANNEL_RV3);
+        newmsg.AddString(message.c_str());
+        gm->sendNetworkMessage(&newmsg);
+    // send status text 
+        newmsg.Reset();
+        newmsg.AddByte(0xB4);
+        newmsg.AddByte(MSG_SMALLINFO);
+        newmsg.AddString("Message sent to Counsellor.");
+        WriteBuffer(newmsg);
+    }
+    
+}
+
+void Protocol76::updateViolationsChannel(NetworkMessage &update) // gamelock in add/remove
+{// update all open violation channels
+    for(AutoList<Player>::listiterator it = Player::listPlayer.list.begin(); it != Player::listPlayer.list.end(); ++it)
+        if ((*it).second->hasViolationsChannelOpen)
+            (*it).second->sendNetworkMessage(&update);
+
+}
+
+void Protocol76::sendViolationChannel(Player* gm) // gamelock in send channel
+{ // couns/gm opens violations channel
+    player->hasViolationsChannelOpen = true;
+    NetworkMessage newmsg;
+    
+    newmsg.AddByte(0xAE);
+    newmsg.AddU16(0x0003);
+
+    for(std::vector<Player*>::iterator it = game->openViolations.begin(); it != game->openViolations.end(); ++it) 
+    {// use vector to get right order
+        if (it != game->openViolations.end())
+        if ((*it) && (*it)->hasOpenViolation) // its valid
+        {
+            newmsg.AddByte(0xAA);
+            newmsg.AddString((*it)->getName()); 
+            newmsg.AddByte(SPEAK_CHANNEL_RV1);
+
+            uint64_t secs = (OTSYS_TIME() - (*it)->violationTime)/1000;
+            newmsg.AddU32((long)(secs));
+            
+            newmsg.AddString((*it)->violationReport);
+        }
+    }
+    WriteBuffer(newmsg);
+
+}
+
+#endif

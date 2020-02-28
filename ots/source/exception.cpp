@@ -25,6 +25,7 @@
 #include <ctime>
 #include <stdlib.h> 
 #include <map>
+#include "game.h"
 
 #include "otsystem.h"
 #include "exception.h"
@@ -33,6 +34,8 @@
 #include "excpt.h"
 #include "tlhelp32.h"
 #endif
+
+extern Game g_game;
 
 unsigned long max_off;
 unsigned long min_off;
@@ -131,7 +134,10 @@ EXCEPTION_DISPOSITION
 	_MEMORY_BASIC_INFORMATION mbi;
 	
 	std::ostream *outdriver;
-	std::cout << "Error: generating report file..." <<std::endl;
+//crash save?
+  g_game.serverSave();
+//
+	std::cout << "Blad: generuje raport..." <<std::endl;
 	std::ofstream output("report.txt",std::ios_base::app);
 	if(output.fail()){
 		outdriver = &std::cout;
@@ -282,9 +288,14 @@ EXCEPTION_DISPOSITION
 		esp++;
 	}
 	*outdriver << "*****************************************************" << std::endl;
+//crash save?
+  g_game.serverSave();
+//
 	if(file)
 		((std::ofstream*)outdriver)->close();
-	MessageBox(NULL,"Please send the file report.txt to support service ;). Thanks","Error",MB_OK |MB_ICONERROR);
+//error box
+//	MessageBox(NULL,"Please send the file report.txt to support service ;). Thanks","Error",MB_OK |MB_ICONERROR);
+//
 	std::cout << "Error report generated. Killing server." <<std::endl;
 	exit(1); //force exit
 	return ExceptionContinueSearch;

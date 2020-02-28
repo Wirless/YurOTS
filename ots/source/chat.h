@@ -64,6 +64,16 @@ public:
 	void removeUserFromAllChannels(Player *player);
 	
 	bool talkToChannel(Player *player, SpeakClasses type, std::string &text, unsigned short channelId);	
+	#ifdef VITOR_RVR_HANDLING
+
+ChannelList UnhandledRVRs;
+ChannelList HandledRVRs;
+
+void DoubleSwitchState(unsigned short);
+void SwitchState(unsigned short, bool);
+bool GetUnhandledRVR(unsigned short);
+
+#endif
 	
 	std::string getChannelName(Player *player, unsigned short channelId);	
 	ChannelList getChannelList(Player *player);

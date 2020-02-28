@@ -29,8 +29,8 @@
 
 #include "creature.h"
 #include "player.h"
-
 #include "luascript.h"
+
 extern LuaScript g_config;
 
 ReturnValue Tile::isBlocking(int objectstate, bool ignoreCreature /* = false*/, bool ignoreMoveableBlocking /*=false*/) const
@@ -67,8 +67,14 @@ ReturnValue Tile::isBlocking(int objectstate, bool ignoreCreature /* = false*/, 
 		return RET_NOTILE;
 	}
 
-	if(!ignoreCreature && !creatures.empty() && ((objectstate & BLOCK_SOLID) == BLOCK_SOLID))
-		return RET_CREATUREBLOCK;
+    if(!ignoreCreature && !creatures.empty() && ((objectstate & BLOCK_SOLID) == BLOCK_SOLID))
+     {
+      Creature* c = *(creatures.begin());
+      Player *player = dynamic_cast<Player*>(c);
+
+      if(!(creatures.size() == 1 && player && player->gmInvisible))
+	   return RET_CREATUREBLOCK;
+    }
 
 	ItemVector::const_iterator iit;
 	for (iit = topItems.begin(); iit != topItems.end(); ++iit) {
@@ -402,6 +408,9 @@ bool Tile::removeThing(Thing *thing)
     else {
       for (it = downItems.begin(); it != downItems.end(); ++it)
         if (*it == item) {
+#ifdef PARCEL_FLOOR                
+                if(item->isZItem()) zItem--;
+#endif //PARCEL_FLOOR  
 					downItems.erase(it);
 					return true;
 				}
@@ -549,6 +558,10 @@ void Tile::addThing(Thing *thing) {
     }
     else
     {
+#ifdef PARCEL_FLOOR
+    //add zItem
+      if(item->isZItem()) zItem++;
+#endif //PARCEL_FLOOR
       downItems.insert(downItems.begin(), item);
     }
   }
@@ -611,7 +624,7 @@ Position Tile::getPvpArenaExit() const
 #ifdef YUR_CLEAN_MAP
 long Tile::clean()
 {
-	if (house)
+    if (house && house->getOwner() != "")
 		return 0L;
 
 	std::list<Item*> trash;
@@ -626,28 +639,6 @@ long Tile::clean()
 	for (std::list<Item*>::iterator iter = trash.begin(); iter != trash.end(); ++iter)
 	{
 		Item* item = *iter;
-		Container* container = dynamic_cast<Container*>(item);
-
-		if (container)		// check if anyone has this container opened and close it
-		{
-			AutoList<Player>::listiterator piter = Player::listPlayer.list.begin();
-			while (piter != Player::listPlayer.list.end())		// iterate players
-			{
-				Player* player = piter->second;				
-				containerLayout::const_iterator citer = player->getContainers();
-
-				while (citer != player->getEndContainer())	// iterate containers opened by player
-				{
-						// close container if it is child of the one on the groud
-					if (citer->second->getTopParent() == container)
-						citer = player->closeContainer(citer->first);
-					else
-						++citer;
-				}
-				++piter;
-			}
-		}
-
 		if (removeThing(item))
 			item->releaseThing();
 	}
@@ -655,7 +646,6 @@ long Tile::clean()
 	return (long)trash.size();
 }
 #endif //YUR_CLEAN_MAP
-
 
 #ifdef YUR_CVS_MODS
 long Tile::getItemHoldingCount() const
@@ -681,3 +671,18 @@ long Tile::getItemHoldingCount() const
 	return count;
 }
 #endif //YUR_CVS_MODS
+bool Tile::hasItem(unsigned long id) const
+{  
+ItemVector::const_iterator iit;
+for(iit = topItems.begin(); iit != topItems.end(); ++iit)
+{
+if((*iit)->getID() == id)
+return true;
+}
+for(iit = downItems.begin(); iit != downItems.end(); ++iit)
+{
+if((*iit)->getID() == id)
+return true;
+}
+return false;
+}

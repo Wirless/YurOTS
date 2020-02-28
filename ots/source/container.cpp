@@ -19,7 +19,9 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "container.h"
-
+#ifdef HUCZU_LOOT_INFO
+#include <sstream>
+#endif //HUCZU_LOOT_INFO
 Container::Container(const unsigned short _type) : Item(_type)
 {
 	//std::cout << "Container constructor " << this << std::endl;
@@ -254,3 +256,31 @@ const Container *Container::getTopParent() const
 	}
 	return aux;
 }
+#ifdef HUCZU_LOOT_INFO
+std::string Container::getContentDescription()
+{
+	std::stringstream s;
+	return getContentDescription(s).str();
+}
+
+std::stringstream& Container::getContentDescription(std::stringstream& s)
+{
+	bool begin = true;
+	Container* container = dynamic_cast<Container*>(this);
+	ContainerList::const_iterator it;
+	for(it = container->getItems(); it != container->getEnd(); ++it)
+	{
+		if(!begin)
+			s << ", ";
+		else
+			begin = false;
+
+		s << (*it)->getLootDescription();
+	}
+
+	if(begin)
+		s << "nic";
+
+	return s;
+}
+#endif //HUCZU_LOOT_INFO

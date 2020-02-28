@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////
 // OpenTibia - an opensource roleplaying game
 //////////////////////////////////////////////////////////////////////
-//
+// 
 //////////////////////////////////////////////////////////////////////
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -54,23 +54,23 @@ public:
 		if((int)voc > maxVoc || voc < 0){
 			return 0;
 		}
-
+		
 		return &(vocationSpells.at(voc));
 	}
-
+  
 	std::map<std::string, Spell*>* getAllSpells(){
 		return &allSpells;
 	}
-
+	
 	//////////////////
   std::map<unsigned short, Spell*>* getVocRuneSpells(int voc){
 		if(voc>maxVoc || voc<0){
 			return 0;
 		}
-
+		
 		return &(vocationRuneSpells.at(voc));
 	}
-
+  
 	std::map<unsigned short, Spell*>* getAllRuneSpells(){
 		return &allRuneSpells;
 	}
@@ -90,7 +90,7 @@ protected:
 class Spell
 {
 public:
-  Spell(std::string name, int64_t magLv, int64_t mana, Game* game);
+  Spell(std::string name, int magLv, int mana, Game* game);
   virtual ~Spell();
 
 	Game* game;
@@ -98,13 +98,13 @@ public:
 	bool isLoaded(){return loaded;}
 	SpellScript* getSpellScript(){return script;};
 	std::string getName() const {return name;};
-	int64_t getMana(){return mana;};
-	int64_t getMagLv(){
+	int getMana(){return mana;};
+	int getMagLv(){
   return magLv;};
 
 protected:
 	std::string name;
-  int64_t magLv, mana;
+  int magLv, mana;
   bool loaded;
 	SpellScript* script;
 };
@@ -112,7 +112,7 @@ protected:
 class InstantSpell : public Spell
 {
 public:
-	InstantSpell(const std::string &, std::string name, std::string words, int64_t magLv, int64_t mana, Game* game);
+	InstantSpell(const std::string &, std::string name, std::string words, int magLv, int mana, Game* game);
 	std::string getWords(){return words;};
 
 protected:
@@ -122,7 +122,7 @@ protected:
 class RuneSpell : public Spell
 {
 public:
-	RuneSpell(const std::string& ,std::string name, unsigned short id, unsigned short charges, int64_t magLv, int64_t mana, Game* game);
+	RuneSpell(const std::string& ,std::string name, unsigned short id, unsigned short charges, int magLv, int mana, Game* game);
 
 protected:
   unsigned short id;
@@ -139,22 +139,28 @@ public:
 
 	static int luaActionDoTargetSpell(lua_State *L);
 	static int luaActionDoTargetExSpell(lua_State *L);
+	static int luaActionDoTargetExSpell2(lua_State *L);
 	static int luaActionDoTargetGroundSpell(lua_State *L);
 	static int luaActionDoAreaSpell(lua_State *L);
-	static int luaActionDoAreaAnimation(lua_State *L);
 	static int luaActionDoAreaExSpell(lua_State *L);
 	static int luaActionDoAreaGroundSpell(lua_State *L);
-
+//    static int luaChallenge(lua_State *L);
+#ifdef SAPPHIRE_EXANAPOX
+static int luaActionRemoveCondition(lua_State *L);
+#endif //SAPPHIRE_EXANAPOX
 	//static int luaActionDoSpell(lua_State *L);
+  static int luaRemoveCondition(lua_State *L);
   static int luaActionGetPos(lua_State *L);
   static int luaActionChangeOutfit(lua_State *L);
   static int luaActionManaShield(lua_State *L);
   static int luaActionChangeSpeed(lua_State *L);
+  static int luaActionParalyze(lua_State *L);
   static int luaActionChangeSpeedMonster(lua_State *L);
   static int luaActionGetSpeed(lua_State *L);
   static int luaActionMakeRune(lua_State *L);
   static int luaActionMakeArrows(lua_State *L);
   static int luaActionMakeFood(lua_State *L);
+
 
 #ifdef BDB_UTEVO_LUX
 	static int luaSetPlayerLightLevel(lua_State *L);
@@ -162,7 +168,12 @@ public:
 #ifdef YUR_INVISIBLE
 	static int luaActionInvisible(lua_State *L);
 #endif //YUR_INVISIBLE
-
+#ifdef EXETA_RES
+static int luaChallenge(lua_State *L);
+#endif //EXETA_RES
+#ifdef RUL_DRUNK
+    static int luaActionDrunk(lua_State *L);
+#endif //RUL_DRUNK
 protected:
 	static void internalGetArea(lua_State *L, MagicEffectAreaClass &magicArea);
 	static void internalGetPosition(lua_State *L, Position& pos);
@@ -172,6 +183,6 @@ protected:
 	static int  internalMakeRune(Player *p,unsigned short sl_id,Spell *S,unsigned short id, unsigned char charges);
 	int registerFunctions();
 	Spell* spell;
-	bool loaded;
+	bool loaded;      
 };
 #endif // __spells_h_

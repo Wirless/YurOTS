@@ -45,6 +45,9 @@ public:
 	virtual bool CanSee(const Creature*) const = 0;
 	virtual void sendNetworkMessage(NetworkMessage *msg) = 0;
 
+#ifdef MOVE_UP
+    virtual void sendThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid, const Item* fromItem, Container *toContainer) = 0;
+#endif //MOVE_UP
 	//container to container
 	virtual void sendThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
 		const Item* fromItem, int oldFromCount, Container *toContainer, unsigned char to_slotid, const Item *toItem, int oldToCount, int count) = 0;
@@ -134,6 +137,8 @@ public:
 	virtual void sendChannelsDialog() = 0;
 	virtual void sendChannel(unsigned short channelId, std::string channelName) = 0;
 	virtual void sendToChannel(const Creature * creature, SpeakClasses type, const std::string &text, unsigned short channelId) = 0;
+virtual void sendFromSys(SpeakClasses type, const std::string &text) = 0;
+//virtual void sendFromSys(SpeakClasses type, const char &text) = 0;
 	virtual void sendOpenPriv(const std::string &receiver) =0;
 
 	virtual void sendVIPLogIn(unsigned long guid) = 0;
@@ -143,6 +148,9 @@ public:
 	virtual void sleepTillMove();
 	virtual void flushOutputBuffer() = 0;
 	virtual void logout() = 0;
+	#ifdef KICK_PLAYER
+    virtual void sendKick() = 0;
+    #endif //KICK_PLAYER
 
 	virtual void AddTextMessage(NetworkMessage &msg,MessageClasses mclass, const char* message) = 0;
 	virtual void AddAnimatedText(NetworkMessage &msg,const Position &pos, unsigned char color, std::string text) = 0;
@@ -151,7 +159,9 @@ public:
 	virtual void AddCreature(NetworkMessage &msg,const Creature *creature, bool known, unsigned int remove) = 0;
 	virtual void AddPlayerStats(NetworkMessage &msg,const Player *player) = 0;
 	virtual void AddPlayerInventoryItem(NetworkMessage &msg,const Player *player, int item) = 0;
-	virtual void AddCreatureSpeak(NetworkMessage &msg,const Creature *creature, SpeakClasses type, std::string text, unsigned short channelId) = 0;
+	virtual void AddCreatureSpeakSay(NetworkMessage &msg,const Creature *creature, Player *player, SpeakClasses type, std::string text, unsigned short channelId) = 0;
+	virtual void AddCreatureSpeak(NetworkMessage &msg,const Creature *creature, Player *player, SpeakClasses type, std::string text, unsigned short channelId) = 0;
+virtual void AddSystemSpeak(NetworkMessage &msg, SpeakClasses type, std::string text, unsigned short channelId) = 0;
 	virtual void AddCreatureHealth(NetworkMessage &msg,const Creature *creature) = 0;
 	virtual void AddPlayerSkills(NetworkMessage &msg,const Player *player) = 0;
 	virtual void AddRemoveThing(NetworkMessage &msg, const Position &pos,unsigned char stackpos) = 0;

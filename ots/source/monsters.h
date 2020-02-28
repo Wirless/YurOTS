@@ -84,6 +84,29 @@ private:
 	int exhaustionTicks;
 };
 
+#ifdef CAYAN_POISONMELEE
+class PhysicalAttackClass {
+public:
+	PhysicalAttackClass()
+	{
+		disttype = DIST_NONE;
+		minWeapondamage = 0;
+		maxWeapondamage = 1;
+		maxHits = 3;
+		maxHitsDamage = 5;
+	};
+	
+	~PhysicalAttackClass() {};
+	
+	fight_t fighttype;
+	subfight_t disttype;
+	
+	int minWeapondamage;
+	int maxWeapondamage;
+	int maxHits;
+	int maxHitsDamage;
+};
+#else
 class PhysicalAttackClass {
 public:
 	PhysicalAttackClass()
@@ -101,6 +124,7 @@ public:
 	int minWeapondamage;
 	int maxWeapondamage;
 };
+#endif //CAYAN_POISONMELEE
 
 #define CHANCE_MAX  100000
 struct LootBlock{
@@ -183,6 +207,7 @@ public:
 	Monsters();
 	~Monsters();
 	
+
 	bool loadFromXml(const std::string &_datadir, bool reloading = false);
 	bool isLoaded(){return loaded;}	
 	bool reload();
@@ -194,7 +219,9 @@ private:
 	MonsterType* loadMonster(const std::string& file, const std::string& monster_name, bool reloading = false);
 	bool loadLootContainer(xmlNodePtr, LootBlock&);
 	bool loadLootItem(xmlNodePtr, LootBlock&);
-
+    bool isCreatureReachable(const  Creature* creature);
+   	void selectTarget(const Creature* creature, bool canReach /* = true*/);
+   	
 	typedef std::map<std::string, unsigned long> MonsterNameMap;
 	MonsterNameMap monsterNames;
 	

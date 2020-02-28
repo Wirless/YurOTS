@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////
 // OpenTibia - an opensource roleplaying game
 //////////////////////////////////////////////////////////////////////
-//
+// 
 //////////////////////////////////////////////////////////////////////
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -27,7 +27,7 @@
 #include <fstream>
 
 #include <libxml/xmlmemory.h>
-#include <libxml/parser.h>
+#include <libxml/parser.h> 
 
 #include <boost/config.hpp>
 #include <boost/bind.hpp>
@@ -35,14 +35,14 @@
 #include "spells.h"
 
 Spells::Spells(Game* igame): game(igame){
-
+                   
                    }
 
 bool Spells::loadFromXml(const std::string &datadir)
 {
 	std::string name, words;
   bool enabled = false;
-  int64_t vocId, maglv = 0, mana = 0, id = 0, charges = 0;
+  int vocId, maglv = 0, mana = 0, id = 0, charges = 0;
   this->loaded = false;
 
 	std::string filename = datadir + "spells/spells.xml";
@@ -54,36 +54,36 @@ bool Spells::loadFromXml(const std::string &datadir)
 		xmlNodePtr root, p, tmp;
 		char* nodeValue = NULL;
 		root = xmlDocGetRootElement(doc);
-
+		
 		if (xmlStrcmp(root->name,(const xmlChar*) "spells")){
 			//TODO: use exceptions here
 			std::cerr << "Malformed XML" << std::endl;
 		}
-
+		
 		nodeValue = (char*)xmlGetProp(root, (const xmlChar *)"maxVoc");
 		if(nodeValue) {
-			maxVoc = atoll(nodeValue);
+			maxVoc = atoi(nodeValue);
 			xmlFreeOTSERV(nodeValue);
 		}
-
+		
 		for(int i =0; i<=this->maxVoc; i++){
 			std::map<std::string, Spell*> voc;
 			vocationSpells.push_back(voc);
 		}
-
+		
 		p = root->children;
-
+            
 		while (p)
 		{
 			const char* str = (char*)p->name;
-
+			
 			if (strcmp(str, "spell") == 0){
 				nodeValue = (char*)xmlGetProp(p, (const xmlChar *)"enabled");
 				if(nodeValue) {
 					enabled = (bool)(atoi(nodeValue) > 0);
 					xmlFreeOTSERV(nodeValue);
 				}
-
+				
 				if (enabled){
 					nodeValue = (char*)xmlGetProp(p, (const xmlChar *)"name");
 					if(nodeValue) {
@@ -91,7 +91,7 @@ bool Spells::loadFromXml(const std::string &datadir)
 						xmlFreeOTSERV(nodeValue);
 						std::transform(name.begin(), name.end(), name.begin(), tolower);
 					}
-
+					
 					nodeValue = (char*)xmlGetProp(p, (const xmlChar *)"words");
 					if(nodeValue) {
 						words = nodeValue;
@@ -100,18 +100,18 @@ bool Spells::loadFromXml(const std::string &datadir)
 
 					nodeValue = (char*)xmlGetProp(p, (const xmlChar *)"maglv");
 					if(nodeValue) {
-						maglv = atoll(nodeValue);
+						maglv = atoi(nodeValue);
 						xmlFreeOTSERV(nodeValue);
 					}
 
 					nodeValue = (char*)xmlGetProp(p, (const xmlChar *)"mana");
 					if(nodeValue) {
-						mana = atoll(nodeValue);
+						mana = atoi(nodeValue);
 						xmlFreeOTSERV(nodeValue);
 					}
 
 					Spell* spell = new InstantSpell(datadir, name, words, maglv, mana, game);
-
+					
 					tmp=p->children;
 					while (tmp){
 						if (strcmp((const char*)tmp->name, "vocation") == 0){
@@ -120,15 +120,15 @@ bool Spells::loadFromXml(const std::string &datadir)
 								vocId = atoi(nodeValue);
 								xmlFreeOTSERV(nodeValue);
 
-								if (vocId<=this->maxVoc){
+								if (vocId<=this->maxVoc){                                                                           
 									(vocationSpells.at(vocId))[words] = spell;
 								}
 							}
 						}
-
+						
 						tmp = tmp->next;
 					}
-
+					
 					allSpells[words] = spell;
 				}
 			}
@@ -138,7 +138,7 @@ bool Spells::loadFromXml(const std::string &datadir)
 					enabled = (bool)(atoi(nodeValue) > 0);
 					xmlFreeOTSERV(nodeValue);
 				}
-
+				
 				if (enabled){
 					nodeValue = (char*)xmlGetProp(p, (const xmlChar *)"name");
 					if(nodeValue) {
@@ -161,18 +161,18 @@ bool Spells::loadFromXml(const std::string &datadir)
 
 					nodeValue = (char*)xmlGetProp(p, (const xmlChar *)"maglv");
 					if(nodeValue) {
-						maglv = atoll(nodeValue);
+						maglv = atoi(nodeValue);
 						xmlFreeOTSERV(nodeValue);
 					}
-
+					
 					nodeValue = (char*)xmlGetProp(p, (const xmlChar *)"mana");
 					if(nodeValue) {
-						mana = atoll(nodeValue);
+						mana = atoi(nodeValue);
 						xmlFreeOTSERV(nodeValue);
 					}
 
 					Spell* spell = new RuneSpell(datadir, name, id, charges, maglv, mana, game);
-
+					
 					tmp=p->children;
 					while (tmp){
 						if (strcmp((const char*)tmp->name, "vocation") == 0){
@@ -181,22 +181,22 @@ bool Spells::loadFromXml(const std::string &datadir)
 								vocId = atoi(nodeValue);
 								xmlFreeOTSERV(nodeValue);
 
-								if (vocId<=this->maxVoc){
+								if (vocId<=this->maxVoc){                                                                           
 									(vocationRuneSpells.at(vocId))[id] = spell;
 								}
 							}
 						}
-
+						
 						tmp = tmp->next;
 					}
-
+					
 					allRuneSpells[id] = spell;
 				}
 			}
 
-			p = p->next;
+			p = p->next;    
 		}
-
+		
 		xmlFreeDoc(doc);
 	}
 
@@ -212,7 +212,7 @@ Spells::~Spells(){
 	}
 }
 
-Spell::Spell(std::string iname, int64_t imagLv, int64_t imana, Game* igame)
+Spell::Spell(std::string iname, int imagLv, int imana, Game* igame)
 :  game(igame), name(iname),magLv(imagLv) , mana(imana)
 {
 	this->loaded=false;
@@ -226,7 +226,7 @@ Spell::~Spell(){
 	}
 }
 
-InstantSpell::InstantSpell(const std::string &datadir, std::string iname, std::string iwords, int64_t magLv, int64_t mana, Game* game)
+InstantSpell::InstantSpell(const std::string &datadir, std::string iname, std::string iwords, int magLv, int mana, Game* game)
 : Spell(iname, magLv, mana, game), words(iwords)
 {
 	this->script = new SpellScript(datadir, std::string(datadir + "spells/instant/")+(this->words)+std::string(".lua"), this);
@@ -235,7 +235,7 @@ InstantSpell::InstantSpell(const std::string &datadir, std::string iname, std::s
 }
 
 
-RuneSpell::RuneSpell(const std::string &datadir, std::string iname, unsigned short id, unsigned short charges, int64_t magLv, int64_t mana, Game* game)
+RuneSpell::RuneSpell(const std::string &datadir, std::string iname, unsigned short id, unsigned short charges, int magLv, int mana, Game* game)
 : Spell(iname, magLv, mana, game)
 {
 	this->id = id;
@@ -246,7 +246,7 @@ RuneSpell::RuneSpell(const std::string &datadir, std::string iname, unsigned sho
 		this->loaded=false;
 }
 
-
+                 
 SpellScript::SpellScript(const std::string &datadir, std::string scriptname, Spell* spell){
 	this->loaded = false;
 	if(scriptname == "")
@@ -258,14 +258,8 @@ SpellScript::SpellScript(const std::string &datadir, std::string scriptname, Spe
 	luaopen_string(luaState);
 	luaopen_io(luaState);
     lua_dofile(luaState, std::string(datadir + "spells/lib/spells.lua").c_str());
-
-#ifdef USING_VISUAL_2005
-	FILE* in = NULL;
-	fopen_s(&in, scriptname.c_str(), "r");
-#else
+	
 	FILE* in=fopen(scriptname.c_str(), "r");
-#endif //USING_VISUAL_2005
-
 	if(!in)
 		return;
 	else
@@ -281,21 +275,27 @@ int SpellScript::registerFunctions(){
 
 	lua_register(luaState, "doTargetMagic", SpellScript::luaActionDoTargetSpell);
 	lua_register(luaState, "doTargetExMagic", SpellScript::luaActionDoTargetExSpell);
+	lua_register(luaState, "doTargetExMagic2", SpellScript::luaActionDoTargetExSpell2);
 	lua_register(luaState, "doTargetGroundMagic", SpellScript::luaActionDoTargetGroundSpell);
 	lua_register(luaState, "doAreaMagic", SpellScript::luaActionDoAreaSpell);
-	lua_register(luaState, "doAreaAnimation", SpellScript::luaActionDoAreaAnimation);
 	lua_register(luaState, "doAreaExMagic", SpellScript::luaActionDoAreaExSpell);
 	lua_register(luaState, "doAreaGroundMagic", SpellScript::luaActionDoAreaGroundSpell);
 
+    
 	lua_register(luaState, "changeOutfit", SpellScript::luaActionChangeOutfit);
 	lua_register(luaState, "manaShield", SpellScript::luaActionManaShield);
 	lua_register(luaState, "getPosition", SpellScript::luaActionGetPos);
 	lua_register(luaState, "getSpeed", SpellScript::luaActionGetSpeed);
 	lua_register(luaState, "changeSpeed", SpellScript::luaActionChangeSpeed);
+	lua_register(luaState, "Paralyze", SpellScript::luaActionParalyze);
 	lua_register(luaState, "changeSpeedMonster", SpellScript::luaActionChangeSpeedMonster);
 	lua_register(luaState, "makeRune", SpellScript::luaActionMakeRune);
 	lua_register(luaState, "makeArrows", SpellScript::luaActionMakeArrows);
 	lua_register(luaState, "makeFood", SpellScript::luaActionMakeFood);
+	
+#ifdef RUL_DRUNK
+    lua_register(luaState, "Drunk", SpellScript::luaActionDrunk);
+#endif //RUL_DRUNK
 
 #ifdef BDB_UTEVO_LUX
 	lua_register(luaState, "setPlayerLightLevel", SpellScript::luaSetPlayerLightLevel);
@@ -303,6 +303,14 @@ int SpellScript::registerFunctions(){
 #ifdef YUR_INVISIBLE
 	lua_register(luaState, "invisible", SpellScript::luaActionInvisible);
 #endif //YUR_INVISIBLE
+#ifdef EXETA_RES
+lua_register(luaState, "challenge", SpellScript::luaChallenge);
+#endif //EXETA_RES
+#ifdef SAPPHIRE_EXANAPOX
+lua_register(luaState, "RemoveCond", SpellScript::luaActionRemoveCondition);
+#endif //SAPPHIRE_EXANAPOX
+
+lua_register(luaState, "RemoveCondition", SpellScript::luaRemoveCondition);
 
 	return true;
 }
@@ -354,18 +362,18 @@ void SpellScript::internalGetArea(lua_State *L, MagicEffectAreaClass &magicArea)
 		col.clear();
     while (lua_next(L, -2) != 0) {
 			col.push_back((unsigned char)lua_tonumber(L, -1));
-
+			
 			lua_pop(L, 1);  /* removes `value'; keeps `key' for next iteration */
 			j++;
 		}
 
 		magicArea.areaVec.push_back(col);
-
+		
 		j=0;
 		lua_pop(L, 1);  /* removes `value'; keeps `key' for next iteration */
 		i++;
 	}
-
+	
 	lua_pop(L, 1);
 
 	magicArea.areaEffect = (char)lua_tonumber(L, -1);
@@ -420,7 +428,7 @@ void SpellScript::internalGetMagicEffect(lua_State *L, MagicEffectClass& me)
 #endif
 			break;
 	}
-
+	
 	lua_next(L, -2);
 	me.animationEffect = (char)lua_tonumber(L, -1);
 	lua_pop(L, 1);
@@ -479,7 +487,9 @@ int SpellScript::luaActionDoTargetSpell(lua_State *L)
 	bool isSuccess = spell->game->creatureThrowRune(creature, centerpos, magicTarget);
 	lua_pushboolean(L, isSuccess);
 	return 1;
+
 }
+
 
 int SpellScript::luaActionDoTargetExSpell(lua_State *L)
 {
@@ -507,17 +517,19 @@ int SpellScript::luaActionDoTargetExSpell(lua_State *L)
 	return 1;
 }
 
+
+
 int SpellScript::luaActionDoTargetGroundSpell(lua_State *L)
 {
 	TransformMap transformMap;
 	internalLoadTransformVec(L, transformMap);
-
+	
 	MagicEffectItem* fieldItem = new MagicEffectItem(transformMap);
 	MagicEffectTargetGroundClass magicGround(fieldItem);
 
 	magicGround.offensive = (bool)(lua_toboolean(L, -1) > 0);
 	lua_pop(L,1);
-
+	
 	magicGround.animationEffect = (char)lua_tonumber(L, -1);
 	lua_pop(L,1);
 
@@ -537,6 +549,38 @@ int SpellScript::luaActionDoTargetGroundSpell(lua_State *L)
 	return 1;
 }
 
+int SpellScript::luaActionDoTargetExSpell2(lua_State *L)
+{
+	ConditionVec condvec;
+	internalLoadDamageVec(L, condvec);
+	MagicEffectTargetExClass magicTargetEx(/*md,*/ condvec);
+
+
+
+	internalGetMagicEffect(L, magicTargetEx);
+	Position centerpos;
+	internalGetPosition(L, centerpos);
+
+	Spell* spell = getSpell(L);
+  magicTargetEx.manaCost = spell->getMana();
+
+	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
+  lua_pop(L,1);
+	if(!creature){
+		lua_pushboolean(L, false);
+		return 1;
+	}
+ RuneSpell* runeSpell = dynamic_cast<RuneSpell*>(spell);
+    bool isSuccess;
+    if(runeSpell)
+    isSuccess = spell->game->creatureThrowRune(creature, centerpos, magicTargetEx);
+    else
+	isSuccess = spell->game->creatureCastSpell(creature, centerpos, magicTargetEx);
+	
+	lua_pushboolean(L, isSuccess);
+	return 1;
+}
+
 int SpellScript::luaActionDoAreaSpell(lua_State *L)
 {
 	MagicEffectAreaClass magicArea;
@@ -552,57 +596,14 @@ int SpellScript::luaActionDoAreaSpell(lua_State *L)
 
 	Spell* spell = getSpell(L);
   magicArea.manaCost = spell->getMana();
-
+  
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
 	if(!creature){
 		lua_pushboolean(L, false);
 		return 1;
 	}
-
-	if(needDirection){
-		switch(creature->getDirection()) {
-			case NORTH: magicArea.direction = 1; break;
-			case WEST: magicArea.direction = 2; break;
-			case EAST: magicArea.direction = 3; break;
-			case SOUTH: magicArea.direction = 4; break;
-		};
-	}
-  else {
-		magicArea.direction = 1;
-	}
-    RuneSpell* runeSpell = dynamic_cast<RuneSpell*>(spell);
-    bool isSuccess;
-    if(runeSpell)
-    isSuccess = spell->game->creatureThrowRune(creature, centerpos, magicArea);
-    else
-	isSuccess = spell->game->creatureCastSpell(creature, centerpos, magicArea);
-	lua_pushboolean(L, isSuccess);
-	return 1;
-}
-int SpellScript::luaActionDoAreaAnimation(lua_State *L)
-{
-	MagicEffectAreaClass magicArea;
-	internalGetMagicEffect(L, magicArea);
-
-	internalGetArea(L, magicArea);
-
-	bool needDirection = (bool)(lua_toboolean(L, -1) > 0);
-	lua_pop(L,1);
-
-	Position centerpos;
-	internalGetPosition(L, centerpos);
-
-	Spell* spell = getSpell(L);
-  magicArea.manaCost = spell->getMana();
-
-	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
-	lua_pop(L,1);
-	if(!creature){
-		lua_pushboolean(L, false);
-		return 1;
-	}
-
+	 
 	if(needDirection){
 		switch(creature->getDirection()) {
 			case NORTH: magicArea.direction = 1; break;
@@ -638,7 +639,7 @@ int SpellScript::luaActionDoAreaExSpell(lua_State *L)
 	MagicEffectAreaExClass magicAreaEx(/*md,*/ condvec);
 
 	internalGetMagicEffect(L, magicAreaEx);
-
+    
 	internalGetArea(L, magicAreaEx);
 
 	bool needDirection = (bool)(lua_toboolean(L, -1) > 0);
@@ -649,14 +650,14 @@ int SpellScript::luaActionDoAreaExSpell(lua_State *L)
 
 	Spell* spell = getSpell(L);
   magicAreaEx.manaCost = spell->getMana();
-
+  
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
 	if(!creature){
 		lua_pushboolean(L, false);
 		return 1;
 	}
-
+		 	
 	if(needDirection){
 		switch(creature->getDirection()) {
 			case NORTH: magicAreaEx.direction = 1; break;
@@ -668,14 +669,14 @@ int SpellScript::luaActionDoAreaExSpell(lua_State *L)
   else {
 		magicAreaEx.direction = 1;
 	}
-
+	
     RuneSpell* runeSpell = dynamic_cast<RuneSpell*>(spell);
     bool isSuccess;
     if(runeSpell)
     isSuccess = spell->game->creatureThrowRune(creature, centerpos, magicAreaEx);
     else
 	isSuccess = spell->game->creatureCastSpell(creature, centerpos, magicAreaEx);
-
+	
 	lua_pushboolean(L, isSuccess);
 	return 1;
 }
@@ -707,7 +708,7 @@ int SpellScript::luaActionDoAreaGroundSpell(lua_State *L)
 		lua_pushboolean(L, false);
 		return 1;
 	}
-
+	
 	if(needDirection){
 		switch(creature->getDirection()) {
 			case NORTH: magicGroundEx.direction = 1; break;
@@ -730,14 +731,14 @@ int SpellScript::luaActionChangeOutfit(lua_State *L){
 	lua_pop(L,1);
 	long time = (long)lua_tonumber(L, -1)*1000;
 	lua_pop(L,1);
-
+	
 	Spell* spell = getSpell(L);
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
-
+	
 	creature->looktype = looktype;
 	spell->game->creatureChangeOutfit(creature);
-
+	
   spell->game->changeOutfitAfter(creature->getID(), creature->lookmaster, time);
 	return 0;
 }
@@ -748,7 +749,7 @@ void SpellScript::internalLoadDamageVec(lua_State *L, ConditionVec& condvec)
 	unsigned long cid = (int)lua_tonumber(L, 1);
 
 	MagicEffectTargetCreatureCondition magicTargetCondition(cid);
-
+	
 	internalGetMagicEffect(L, magicTargetCondition);
 
 	//conditionTimeCount
@@ -774,7 +775,7 @@ void SpellScript::internalLoadTransformVec(lua_State *L, TransformMap& transform
 
 		int id = (int)lua_tonumber(L, -1);
 		lua_pop(L,1);
-
+		
 		ti.first = (int)lua_tonumber(L, -1);
 		lua_pop(L,1);
 
@@ -784,7 +785,7 @@ void SpellScript::internalLoadTransformVec(lua_State *L, TransformMap& transform
 		for(int n = 0; n < count; ++n) {
 			internalLoadDamageVec(L, condvec);
 		}
-
+		
 		ti.second = condvec;
 		transformMap[id] = ti;
 	}
@@ -794,50 +795,136 @@ int SpellScript::luaActionManaShield(lua_State *L)
 {
 	long time = (long)lua_tonumber(L, -1)*1000;
 	lua_pop(L,1);
-
+	
 	Spell* spell = getSpell(L);
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
 	creature->manaShieldTicks = time;
-
+	
 	Player* p = dynamic_cast<Player*>(creature);
 	if(p)
 	     p->sendIcons();
 	return 0;
 }
 
+int SpellScript::luaRemoveCondition(lua_State* L)
+{
+    int cid = (int)lua_tonumber(L, -2);
+    int condition = (int)lua_tonumber(L, -1);
+    lua_pop(L,2);
+    Spell* spell = getSpell(L);
+    
+    Creature* c = spell->game->getCreatureByID(cid);
+    Player* p = c? dynamic_cast<Player*>(c) : NULL;
+    attacktype_t attackType;
+    
+    
+    switch(condition) {
+  case 0: attackType = ATTACK_NONE; break;
+  case 1: attackType = ATTACK_ENERGY; break;
+  case 2: attackType = ATTACK_BURST; break;
+  case 3: attackType = ATTACK_FIRE; break;
+  case 4: attackType = ATTACK_PHYSICAL; break;
+  case 5: attackType = ATTACK_POISON; break;
+  case 6: attackType = ATTACK_PARALYZE; break;
+  case 7: attackType = ATTACK_DRUNKNESS; break;
+  default:
+   break;
+     }
+
+    if (p && c){
+        c->removeCondition(attackType);
+    return 0;
+    }
+}
+
 int SpellScript::luaActionChangeSpeed(lua_State *L){
-	long time = (long)lua_tonumber(L, -1)*1000;
-	lua_pop(L,1);
-
-	int speed = (int)lua_tonumber(L, -1);
-	lua_pop(L,1);
-
-	Spell* spell = getSpell(L);
-	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
-	lua_pop(L,1);
-
-	spell->game->addEvent(makeTask(time, boost::bind(&Game::changeSpeed, spell->game,creature->getID(), creature->getNormalSpeed()) ) );
-	Player* p = dynamic_cast<Player*>(creature);
-	if(p){
-         spell->game->changeSpeed(creature->getID(), creature->getNormalSpeed()+speed);
-	     p->sendIcons();
+ long time = (long)lua_tonumber(L, -1)*1000;
+ lua_pop(L,1);
+ 
+ int speed = (int)lua_tonumber(L, -1);
+ lua_pop(L,1);
+ 
+ Spell* spell = getSpell(L);
+ Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
+ lua_pop(L,1);
+ 
+ spell->game->addEvent(makeTask(time, boost::bind(&Game::changeSpeed, spell->game,creature->getID(), creature->getNormalSpeed()+creature->boh+creature->timeRing)));
+ Player* p = dynamic_cast<Player*>(creature);
+ if(p){
+      creature->hasteSpeed = speed;
+      int newspeed = creature->getNormalSpeed()+creature->hasteSpeed+creature->boh+creature->timeRing;
+         spell->game->changeSpeed(creature->getID(), (unsigned short)newspeed); 
+      creature->hasteTicks = time;
+         p->sendIcons();
       }
     creature->hasteTicks = time;
-	return 0;
+ return 0;
+}
+
+int SpellScript::luaActionParalyze(lua_State *L){
+    long speed = (long)lua_tonumber(L, -1);
+ lua_pop(L,1);
+ 
+ long count = (long)lua_tonumber(L, -1);
+ lua_pop(L,1);
+ 
+ int ticks = (int)lua_tonumber(L, -1);
+ lua_pop(L,1);
+ 
+ Position centerpos;
+ internalGetPosition(L, centerpos);
+ 
+ unsigned long cid = (unsigned long)lua_tonumber(L, -1);
+ lua_pop(L,1);
+ 
+ Spell* spell = getSpell(L);
+ Creature* creature = spell->game->getCreatureByPosition(centerpos.x, centerpos.y, centerpos.z);
+ Creature* attacker = spell->game->getCreatureByID(cid);
+ 
+ if(attacker && creature && creature->getImmunities() != ATTACK_PARALYZE && creature->access == 0){
+    MagicEffectTargetCreatureCondition magicCondition = MagicEffectTargetCreatureCondition(cid);
+    magicCondition.animationColor = 0xB4;
+    magicCondition.damageEffect = NM_ME_MAGIC_BLOOD;
+    magicCondition.hitEffect = NM_ME_MAGIC_BLOOD;
+    magicCondition.attackType = ATTACK_PARALYZE;
+    magicCondition.maxDamage = 0;
+    magicCondition.minDamage = 0;
+    magicCondition.offensive = true;
+    CreatureCondition condition = CreatureCondition(ticks, count, magicCondition);
+    creature->addCondition(condition, true);
+    spell->game->changeSpeed(creature->getID(), speed);
+    creature->hasteSpeed = 0;
+    creature->hasteTicks = 0;
+    creature->speed = 110;
+    creature->exhaustedTicks  = 3001;
+    Player* p = dynamic_cast<Player*>(creature);
+    Player* attackerplayer = dynamic_cast<Player*>(attacker);
+    if(p){
+    p->sendTextMessage(MSG_SMALLINFO, "Zostales sparalizowany.");
+    p->inFightTicks = (long)g_config.getGlobalNumber("pzlocked", 0);
+    p->sendIcons();
+    }
+    if(attackerplayer && attackerplayer->access <= 1){
+    attackerplayer->pzLocked = true;
+    attackerplayer->inFightTicks = (long)g_config.getGlobalNumber("pzlocked", 0);
+    attackerplayer->sendIcons();
+    }
+    } // because 0 damage is done you dont become pzlocked. (supports paralyzed more then once (kinda like fire))
+ return 0;
 }
 
 int SpellScript::luaActionChangeSpeedMonster(lua_State *L){
 	long time = (long)lua_tonumber(L, -1)*1000;
 	lua_pop(L,1);
-
+	
 	int speed = (int)lua_tonumber(L, -1);
 	lua_pop(L,1);
-
+	
 	Spell* spell = getSpell(L);
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
-
+	
 	if(creature){
 		spell->game->addEvent(makeTask(time, boost::bind(&Game::changeSpeed, spell->game,creature->getID(), creature->getSpeed())));
 		spell->game->changeSpeed(creature->getID(), speed);
@@ -851,7 +938,7 @@ int SpellScript::luaActionGetSpeed(lua_State *L){
 	Spell* spell = getSpell(L);
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
-
+	
 	lua_pushnumber(L, creature->getNormalSpeed());
 	return 1;
 }
@@ -867,11 +954,11 @@ int SpellScript::luaActionGetPos(lua_State *L){
       lua_pushstring(L, "x");
       lua_pushnil(L);
       lua_settable(L, -3);
-
+      
       lua_pushstring(L, "y");
       lua_pushnil(L);
       lua_settable(L, -3);
-
+      
       lua_pushstring(L, "z");
       lua_pushnil(L);
       lua_settable(L, -3);
@@ -881,11 +968,11 @@ int SpellScript::luaActionGetPos(lua_State *L){
       lua_pushstring(L, "x");
       lua_pushnumber(L, c->pos.x);
       lua_settable(L, -3);
-
+      
       lua_pushstring(L, "y");
       lua_pushnumber(L, c->pos.y);
       lua_settable(L, -3);
-
+      
       lua_pushstring(L, "z");
       lua_pushnumber(L, c->pos.z);
       lua_settable(L, -3);
@@ -896,14 +983,14 @@ int SpellScript::luaActionGetPos(lua_State *L){
 int SpellScript::luaActionMakeRune(lua_State *L){
 	unsigned char charges = (unsigned char)lua_tonumber(L, -1);
 	lua_pop(L,1);
-
+	
 	unsigned short type = (unsigned short)lua_tonumber(L, -1);
 	lua_pop(L,1);
-
+	
 	Spell* spell = getSpell(L);
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
-
+		
 	Player* player = dynamic_cast<Player*>(creature);
 	if(player){
 		MagicEffectTargetClass magicTarget;
@@ -911,7 +998,7 @@ int SpellScript::luaActionMakeRune(lua_State *L){
 		magicTarget.offensive = false;
 		magicTarget.drawblood = false;
 		magicTarget.animationEffect = 0;
-		magicTarget.attackType = ATTACK_NONE;
+		magicTarget.attackType = ATTACK_NONE;		
 		magicTarget.hitEffect = 255; //NM_ME_NONE
 		magicTarget.animationColor = 19; //GREEN
 
@@ -938,7 +1025,7 @@ int SpellScript::luaActionMakeRune(lua_State *L){
 			magicTarget.manaCost = player->getPlayerInfo(PLAYERINFO_MAXMANA) + 1; //force not enough mana
 		}
 		else if( a == 0 && b == 0){ //not create any rune
-			magicTarget.damageEffect = 2; //NM_ME_PUFF
+			magicTarget.damageEffect = 2; //NM_ME_PUFF		
 			magicTarget.manaCost = 0;
 		}
 		else if(a == 1 || b == 1) {
@@ -952,7 +1039,7 @@ int SpellScript::luaActionMakeRune(lua_State *L){
 				magicTarget.manaCost = spell->getMana();
 			}
 			else{	//only create 1 rune
-				magicTarget.manaCost = 0;
+				magicTarget.manaCost = 0; 
 			}
 		}*/
 
@@ -986,6 +1073,26 @@ int SpellScript::internalMakeRune(Player *p,unsigned short sl_id,Spell *S,unsign
 	return 0;
 }
 
+/*
+int SpellScript::luaChallenge(lua_State* L)
+{
+    int id = (int)lua_tonumber(L, -1);
+    Spell* spell = getSpell(L);
+    Creature* creature = spell->game->getCreatureByID(id);  
+          
+    SpectatorVec list;
+    SpectatorVec::iterator it; 
+    spell->game->getSpectators(Range(creature->pos,1,1,1,1, false), list); 
+    for(it = list.begin(); it != list.end(); ++it) {
+        Monster* monster = dynamic_cast<Monster*>(*it);
+        if(monster && !monster->isSummon()){ 
+            monster->changeTarget(creature); 
+        }
+    }
+    return 0;
+}
+*/
+
 int SpellScript::luaActionMakeArrows(lua_State *L){
 	unsigned char count = (unsigned char)lua_tonumber(L, -1);
 	lua_pop(L,1);
@@ -996,7 +1103,7 @@ int SpellScript::luaActionMakeArrows(lua_State *L){
 	Spell* spell = getSpell(L);
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
-
+ 
 	Player* player = dynamic_cast<Player*>(creature);
 	if(player){
  		MagicEffectTargetClass magicTarget;
@@ -1004,19 +1111,19 @@ int SpellScript::luaActionMakeArrows(lua_State *L){
 		magicTarget.offensive = false;
  		magicTarget.drawblood = false;
  		magicTarget.animationEffect = 0;
- 		magicTarget.attackType = ATTACK_NONE;
+ 		magicTarget.attackType = ATTACK_NONE;  
  		magicTarget.hitEffect = 255; //NM_ME_NONE
  		magicTarget.animationColor = 19; //GREEN
 
 		if(player->mana < spell->getMana()){
-			magicTarget.damageEffect = 2; //NM_ME_PUFF
+			magicTarget.damageEffect = 2; //NM_ME_PUFF  
   			magicTarget.manaCost = player->getPlayerInfo(PLAYERINFO_MAXMANA) + 1; //force not enough mana
 		}
-		else{
+		else{			
 			magicTarget.manaCost = spell->getMana();
 			magicTarget.damageEffect = 12; //NM_ME_MAGIC_ENERGIE = 12
  		}
-
+ 		
 		bool isSuccess = spell->game->creatureThrowRune(player, player->pos, magicTarget);
 
 		if(isSuccess) {
@@ -1025,7 +1132,7 @@ int SpellScript::luaActionMakeArrows(lua_State *L){
 				spell->game->addThing(NULL,player->pos,new_item);
 			}
 		}
-
+		
  		lua_pushnumber(L, 1);
  		return 1;
 	}
@@ -1036,11 +1143,11 @@ int SpellScript::luaActionMakeArrows(lua_State *L){
 int SpellScript::luaActionMakeFood(lua_State *L){
 	unsigned char count = (unsigned char)lua_tonumber(L, -1);
 	lua_pop(L,1);
-
+	
 	Spell* spell = getSpell(L);
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
-
+	
 	Player* player = dynamic_cast<Player*>(creature);
 	if(player){
   		MagicEffectTargetClass magicTarget;
@@ -1048,19 +1155,19 @@ int SpellScript::luaActionMakeFood(lua_State *L){
 		magicTarget.offensive = false;
 		magicTarget.drawblood = false;
 		magicTarget.animationEffect = 0;
-		magicTarget.attackType = ATTACK_NONE;
+		magicTarget.attackType = ATTACK_NONE;  
 		magicTarget.hitEffect = 255; //NM_ME_NONE
 		magicTarget.animationColor = 19; //GREEN
 
 		if(player->mana < spell->getMana()){
-  			magicTarget.damageEffect = 2; //NM_ME_PUFF
+  			magicTarget.damageEffect = 2; //NM_ME_PUFF  
     		magicTarget.manaCost = player->getPlayerInfo(PLAYERINFO_MAXMANA) + 1; //force not enough mana
   		}
-  		else{
+  		else{  
   			magicTarget.manaCost = spell->getMana();
-  			magicTarget.damageEffect = 12; //NM_ME_MAGIC_ENERGIE = 12
+  			magicTarget.damageEffect = 12; //NM_ME_MAGIC_ENERGIE = 12    	
 		}
-
+  
 		bool isSuccess = spell->game->creatureThrowRune(player, player->pos, magicTarget);
 
 		if(isSuccess) {
@@ -1074,14 +1181,14 @@ int SpellScript::luaActionMakeFood(lua_State *L){
 			if(r == 5) foodtype = ITEM_CHEESE;
 			if(r == 6) foodtype = ITEM_ROLL;
     	if(r == 7) foodtype = ITEM_BREAD;
-
+  		
   		Item* new_item = Item::CreateItem(foodtype,count);
 			if(!player->addItem(new_item)){
 				//add item on the ground
 				spell->game->addThing(NULL,player->pos,new_item);
 			}
 		}
-
+  
 		lua_pushnumber(L, 1);
 		return 1;
 	}
@@ -1102,7 +1209,10 @@ int SpellScript::luaSetPlayerLightLevel(lua_State* L)
 
 	if (player)
 		spell->game->creatureChangeLight(player, 0, lvl, 0xD7);
-
+#ifdef _BBK_KIED_LIGHT_SPELLS_
+		player->lightTicks = g_config.getGlobalNumber("lighttime", 6)*1000;
+        player->lightTries = lvl;
+#endif //_BBK_KIED_LIGHT_SPELLS_
 	return 0;
 }
 #endif //BDB_UTEVO_LUX
@@ -1113,7 +1223,7 @@ int SpellScript::luaActionInvisible(lua_State *L)
 {
 	long time = (long)lua_tonumber(L, -1)*1000;
 	lua_pop(L,1);
-
+	
 	Spell* spell = getSpell(L);
 	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
 	lua_pop(L,1);
@@ -1123,3 +1233,73 @@ int SpellScript::luaActionInvisible(lua_State *L)
 	return 0;
 }
 #endif //YUR_INVISIBLE
+#ifdef RUL_DRUNK
+int SpellScript::luaActionDrunk(lua_State *L){
+int ticks = (int)lua_tonumber(L, -1);
+lua_pop(L,1);
+long count = (long)lua_tonumber(L, -1);
+lua_pop(L,1);
+Position centerpos;
+internalGetPosition(L, centerpos);
+unsigned long cid = (unsigned long)lua_tonumber(L, -1);
+lua_pop(L,1);
+Spell* spell = getSpell(L);
+Creature* creature = spell->game->getCreatureByPosition(centerpos.x, centerpos.y, centerpos.z);
+Creature* attacker = spell->game->getCreatureByID(cid);
+if(attacker && creature && creature->getImmunities() != ATTACK_DRUNKNESS && creature->access < g_config.ACCESS_PROTECT){
+MagicEffectTargetCreatureCondition magicCondition = MagicEffectTargetCreatureCondition(cid);
+magicCondition.animationColor = 0xB4;
+magicCondition.damageEffect = NM_ME_MAGIC_BLOOD;
+magicCondition.hitEffect = NM_ME_MAGIC_BLOOD;
+magicCondition.attackType = ATTACK_DRUNKNESS;
+magicCondition.maxDamage = 0;
+magicCondition.minDamage = 0;
+magicCondition.offensive = true;
+CreatureCondition condition = CreatureCondition(ticks, count, magicCondition);
+creature->addCondition(condition, true);
+creature->drunkTicks = 10000;
+Player* p = dynamic_cast<Player*>(creature);
+Player* attackerplayer = dynamic_cast<Player*>(attacker);
+if(p){
+p->sendTextMessage(MSG_SMALLINFO, "You are drunkness.");
+p->inFightTicks = (long)g_config.getGlobalNumber("pzlocked", 0);
+p->sendIcons();
+}
+if(attackerplayer && attackerplayer->access < g_config.ACCESS_PROTECT){
+attackerplayer->pzLocked = true;
+attackerplayer->inFightTicks = (long)g_config.getGlobalNumber("pzlocked", 0);
+attackerplayer->sendIcons();
+}
+} // because 0 damage is done you dont become pzlocked. (supports paralyzed more then once (kinda like fire))
+return 0;
+}
+#endif //RUL_DRUNK
+#ifdef SAPPHIRE_EXANAPOX
+int SpellScript::luaActionRemoveCondition(lua_State *L){
+     
+	Spell* spell = getSpell(L);
+	Creature* creature = spell->game->getCreatureByID((unsigned long)lua_tonumber(L, -1));
+	lua_pop(L,1);
+        creature->removeCondition(ATTACK_POISON);
+	return 0;
+}
+#endif //SAPPHIRE_EXANAPOX
+#ifdef EXETA_RES
+int SpellScript::luaChallenge(lua_State* L)
+{
+    int id = (int)lua_tonumber(L, -1);
+    Spell* spell = getSpell(L);
+    Creature* creature = spell->game->getCreatureByID(id);  
+    Player* player = dynamic_cast<Player*>(creature);
+          
+    SpectatorVec list;
+    SpectatorVec::iterator it;
+    for(it = list.begin(); it != list.end(); ++it) {
+    Monster* monster = dynamic_cast<Monster*>(*it); 
+        if(monster && !monster->isSummon()){ 
+            monster->setAttackedCreature(player); 
+        }
+    }
+}
+#endif //EXETA_RES
+

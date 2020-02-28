@@ -28,7 +28,7 @@
 
 extern LuaScript g_config;
 extern Game g_game;
-#define YUR_VERSION "0.9.4f"
+#define YUR_VERSION "2.0.0a"
 
 Status* Status::_Status = NULL;
 
@@ -67,11 +67,11 @@ std::string Status::getStatusString(){
 	xmlDocPtr doc;
 	xmlNodePtr p, root;
 
-	doc = xmlNewDoc((const xmlChar*)"1.0");
+	doc = xmlNewDoc((const xmlChar*)"2.5.9");
 	doc->children = xmlNewDocNode(doc, NULL, (const xmlChar*)"tsqp", NULL);
 	root=doc->children;
 
-	xmlSetProp(root, (const xmlChar*) "version", (const xmlChar*)"1.0");
+	xmlSetProp(root, (const xmlChar*) "version", (const xmlChar*)"2.5.9");
 
 
 	p=xmlNewNode(NULL,(const xmlChar*)"serverinfo");
@@ -84,7 +84,7 @@ std::string Status::getStatusString(){
 	xmlSetProp(p, (const xmlChar*) "port", (const xmlChar*)g_config.getGlobalString("port", "").c_str());
 	xmlSetProp(p, (const xmlChar*) "location", (const xmlChar*)g_config.getGlobalString("location", "").c_str());
 	xmlSetProp(p, (const xmlChar*) "url", (const xmlChar*)g_config.getGlobalString("url", "").c_str());
-	xmlSetProp(p, (const xmlChar*) "server", (const xmlChar*)"YurOTS");
+	xmlSetProp(p, (const xmlChar*) "server", (const xmlChar*)"Stonehenge OTS");
 	xmlSetProp(p, (const xmlChar*) "version", (const xmlChar*)YUR_VERSION);
 	xmlAddChild(root, p);
 

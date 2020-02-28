@@ -33,6 +33,9 @@ class Container : public Item
 		unsigned short maxitems; //number of max items in container  
 		unsigned short actualitems; // number of items in container
 		ContainerList lcontained;
+#ifdef HUCZU_LOOT_INFO
+		std::stringstream& getContentDescription(std::stringstream& s);
+#endif
 
 	public:
 		Container(const unsigned short _type);
@@ -70,6 +73,9 @@ class Container : public Item
 		bool isHoldingItem(const Item* item) const;
 		long getItemHoldingCount() const;
 		virtual double getWeight() const;
+#ifdef HUCZU_LOOT_INFO
+		std::string getContentDescription();
+#endif
 };
 
 #endif //__OTSERV_CONTAINER_H

@@ -170,6 +170,8 @@ bool LoginQueue::save()
 
 	doc->children = xmlNewDocNode(doc, NULL, (const xmlChar*)"queue", NULL);
     root = doc->children;
+	char buf[64];
+
 	removeDeadEntries();	// clean before saving
 
 		// first save players that are online
@@ -177,8 +179,8 @@ bool LoginQueue::save()
 		iter != Player::listPlayer.list.end(); ++iter)
 	{
 		entryNode = xmlNewNode(NULL, (const xmlChar*)"entry");
-		xmlSetProp(entryNode, (const xmlChar*)"account", (const xmlChar*)str(iter->second->getAccount()).c_str());
-		xmlSetProp(entryNode, (const xmlChar*)"state", (const xmlChar*)str(LOGGED).c_str());
+		xmlSetProp(entryNode, (const xmlChar*)"account", (const xmlChar*)itoa(iter->second->getAccount(), buf, 10));
+		xmlSetProp(entryNode, (const xmlChar*)"state", (const xmlChar*)itoa(LOGGED, buf, 10));
 		xmlAddChild(root, entryNode);
 	}
 
@@ -186,8 +188,8 @@ bool LoginQueue::save()
 	for (LoginTryList::iterator iter = lq.begin(); iter != lq.end(); ++iter)
 	{
 		entryNode = xmlNewNode(NULL, (const xmlChar*)"entry");
-		xmlSetProp(entryNode, (const xmlChar*)"account", (const xmlChar*)str(iter->accountNumber).c_str());
-		xmlSetProp(entryNode, (const xmlChar*)"state", (const xmlChar*)str(iter->state).c_str());
+		xmlSetProp(entryNode, (const xmlChar*)"account", (const xmlChar*)itoa(iter->accountNumber, buf, 10));
+		xmlSetProp(entryNode, (const xmlChar*)"state", (const xmlChar*)itoa(iter->state, buf, 10));
 		xmlAddChild(root, entryNode);
 	}
 
@@ -201,21 +203,21 @@ bool LoginQueue::save()
 	{
 		xmlFreeDoc(doc);
 		xmlMutexUnlock(xmlmutex);
-		std::cout << "Failed to save " << file << std::endl;
+		std::cout << "Nieudany zapis " << file << std::endl;
 		return false;
 	}
 }
 
 void LoginQueue::show()		// for testing purposes only
 {
-	std::cout << " --- QUEUE --- (size: " << (int)lq.size() << ")\n";
+	std::cout << " --- KOLEJKA --- (size: " << (int)lq.size() << ")\n";
 	LoginTryListIterator iter = lq.begin();
 	while (iter != lq.end())
 	{
-		std::cout << "account: " << iter->accountNumber << ", try: " << (long)iter->tryTime << ", state:";
+		std::cout << "konto: " << iter->accountNumber << ", proba: " << (long)iter->tryTime << ", stan:";
 		if (iter->state == ACTIVE) std::cout << "active\n";
-		else if (iter->state == LOGGED) std::cout << "logged\n";
-		else std::cout << "dead\n";
+		else if (iter->state == LOGGED) std::cout << "zalogowany\n";
+		else std::cout << "martwy\n";
 		++iter;
 	}
 }

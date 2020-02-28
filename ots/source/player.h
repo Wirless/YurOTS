@@ -24,6 +24,7 @@
 #include "definitions.h"
 #include "creature.h"
 #include "container.h"
+//#include "networkmessage.h"
 
 #include <vector>
 #include <ctime>
@@ -34,10 +35,31 @@
 #include "guilds.h"
 
 #include "luascript.h"
+#include "ioaccount.h"
+#include "networkmessage.h"
+
 extern LuaScript g_config;
 
 class Protocol;
+#ifdef RUL_WALKTO
+enum t_walkToTypes {
+    WALK_NONE,
+    WALK_USEITEM,
+    WALK_USEITEMEX,
+    WALK_THROWITEM,
+};
 
+struct t_walkTo {
+    //change this odd struct :p
+    t_walkToTypes type; //general
+    
+    Position from_pos; //useItemEx
+    Position to_pos; //
+    unsigned char stack, index;
+    unsigned short itemid;
+    Position dest_pos;
+};
+#endif //RUL_WALKTO
 #ifdef JD_DEATH_LIST
 struct Death
 {
@@ -79,7 +101,9 @@ enum playerinfo_t {
 enum playersex_t {
 	PLAYERSEX_FEMALE = 0,
 	PLAYERSEX_MALE = 1,
-	PLAYERSEX_OLDMALE = 2
+	PLAYERSEX_OLDMALE = 2,
+    PLAYERSEX_NIMF = 2,
+    PLAYERSEX_DWARF = 3
 };
 
 //0 = None, 1 = Sorcerer, 2 = Druid, 3 = Paladin, 4 = Knight
@@ -119,8 +143,93 @@ typedef std::set<unsigned long> VIPListSet;
 class Player : public Creature
 {
 public:
+#ifdef _BBK_KIED_LIGHT_SPELLS_
+    int lightTicks;
+    int lightTries;
+#endif //_BBK_KIED_LIGHT_SPELLS_
+#ifdef __BBK_TRAINING_SWITCH
+       bool training;
+       int trainingTicks;   
+       bool needswitch;
+       int switchTicks;
+#endif //__BBK_TRAINING_SWITCH
+#ifdef __BBK_TRAINING
+       bool training;
+       int trainingTicks;   
+       bool needrewrite;
+       int rewriteCode;
+       int rewriteTicks;
+#endif //__BBK_TRAINING
+	int premiumTicks;
+//bbk best hit
+int damageMelee;
+int damageMagic;
+//bbk best hit
+//bbk anty spam
+int msgTicks;
+//bbk anty spam
+bool fixbyReX;
+std::string msgTmp;
+playervoc_t vocation;
+int frozen;
+ std::string married;  
+	std::string guildName;
+       bool removeItems(unsigned short itemid, unsigned short count);
+       #ifdef _NG_BBK_PVP__    
+bool atkMode;
+#endif //_NG_BBK_PVP__ 
+#ifdef YUR_GUILD_SYSTEM
+	gstat_t guildStatus;
+#endif //YUR_GUILD_SYSTEM
+       #ifdef BD_FOLLOW
+	int fightMode, followMode;
+    Creature *oldAttackedCreature;
+#endif //BD_FOLLOW
+
+#ifdef _REX_CVS_MOD_
+bool checkHouses1();
+unsigned short int housex,housey;
+unsigned char housez;
+long rentTime, rentPrice;
+void checkHouses();
+//int housex , housey , housez , rentTime , setLast , rentPrice;
+#endif
+
+int msgBT;
+//	char fightMode, followMode;
+
+#ifdef RUL_WALKTO
+t_walkTo walkTo;
+#endif //RUL_WALKTO       
+//	virtual void onTileUpdated(const Position &pos);
+#ifdef REX_MUTED
+bool MutedSystem();
+unsigned int short muted, alreadymuted;
+bool checkmuted;
+long tradeTicks;
+long helpTicks;
+long gameChatTicks;
+#endif //REX_MUTED     
+#ifdef RUL_DRUNK
+       bool candrunk; //bool roox =d
+#endif //RUL_DRUNK
+void sendNetworkMessage(NetworkMessage *msg);
+#ifdef TLM_BEDS 
+time_t lastlogout; 
+bool isSleeping(); 
+void sendLogout(); 
+         bool kicked; 
+    void sendKick(); 
+
+#endif //TLM_BEDS  
+time_t lastlogin;
+time_t lastLoginSaved;  
+    bool removeItemSmart(int itemid, int count, bool depot);
 	Player(const std::string& name, Protocol* p);
 	virtual ~Player();
+#ifdef CAYAN_POISONARROW
+	bool isUsingPoisonArrows() const;
+#endif //CAYAN_POISONARROW
 	void setGUID(unsigned long _guid) {guid = _guid;};
 	unsigned long getGUID() const { return guid;};
 	virtual unsigned long idRange(){ return 0x10000000;}
@@ -128,8 +237,16 @@ public:
 	void removeList();
 	void addList();
 	void kickPlayer();
+#ifdef _BDD_REPUTACJA_
+	int32_t reput; //BDD1
+#endif //_BDD_REPUTACJA_
+	int banned , banstart, banend, deleted, finalwarning;
+		bool namelock;
+    std::string comment, reason, action, banrealtime;
+    bool hasVoted;
 
 	bool addItem(Item* item, bool test = false);
+	
 	bool internalAddItemContainer(Container *container,Item* item);
 
 	freeslot_t getFreeSlot(Container **container,unsigned char &slot, const Item* item);
@@ -145,17 +262,26 @@ public:
 
 	containerLayout::const_iterator getContainers() const { return vcontainers.begin();}
 	containerLayout::const_iterator getEndContainer() const { return vcontainers.end();}
+	
+#ifdef SDG_VIOLATIONS
+    bool hasViolationsChannelOpen; // for updates of newly added/answered by other/cancelled
+    bool hasOpenViolation;  // to cancel/close violation on logout etc.
+    std::string violationName;  // reporter name or gm name, depends on side of convo
+    uint64_t violationTime;     // time when reported
+    std::string violationReport; // the report string
+#endif
+	
+	#ifdef VITOR_RVR_HANDLING
+
+bool IsAtReport;
+
+#endif
 
 	Container* getContainer(unsigned char containerid);
 	unsigned char getContainerID(const Container* container) const;
 	bool isHoldingContainer(const Container* container) const;
 	void addContainer(unsigned char containerid, Container *container);
-
-#ifdef YUR_CLEAN_MAP
-	containerLayout::const_iterator closeContainer(unsigned char containerid);
-#else
 	void closeContainer(unsigned char containerid);
-#endif //YUR_CLEAN_MAP
 
 	void addStorageValue(const unsigned long key, const long value);
 	bool getStorageValue(const unsigned long key, long &value) const;
@@ -163,21 +289,37 @@ public:
 	inline StorageMap::const_iterator getStorageIteratorEnd() const {return storageMap.end();}
 
 	int getLevel() const {return level;}
-	int64_t getHealth() const {return health;}
-	int64_t getMana() const {return mana;}
-	int64_t getMagicLevel() const {return maglevel;}
+	int getHealth() const {return health;}
+	int getMana() const {return mana;}
+	int getMagicLevel() const {return maglevel;}
 	playersex_t getSex() {return sex;}
 	bool gainManaTick();
 	bool gainHealthTick();
+#ifdef DT_PREMMY
+    bool premmium;
+	bool isPremmium() const{
+        Account acc = 
+IOAccount::instance()->loadAccount(getAccountNumber()); 
+        return (((int)floor(double(acc.premDays)/(86400.0)) > 0) ? true : 
+false);  
+{ return g_config.FREE_PREMMY || acc.premDays > 0; }
+    }
+#endif //DT_PREMMY
+	bool aol;
+
 
 	const std::string& getName() const {return name;};
 	const std::string& getGuildName() const {return guildName;};
 	unsigned long getGuildId() const {return guildId;};
 
 
-	int64_t getPlayerInfo(playerinfo_t playerinfo) const;
-	int64_t getSkill(skills_t skilltype, skillsid_t skillinfo) const;
+	int getPlayerInfo(playerinfo_t playerinfo) const;
+	int getSkill(skills_t skilltype, skillsid_t skillinfo) const;
 	std::string getSkillName(int skillid);
+	std::string getSkillName2(int skillid);
+#ifdef GET_ITEM
+bool checkItem(int itemid);
+#endif //GET_ITEM
 	void addSkillTry(int skilltry);
 	void addSkillShieldTry(int skilltry);
 
@@ -189,10 +331,58 @@ public:
 		else
 			return 0.00;
 	}
+	
+#ifdef BLESS	
+  virtual exp_t getLostExperience() {
+          Player* player = dynamic_cast<Player*>(this);
+            if(bless == 1 && player->promoted == 0) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_1/100.0));
+}
+else if(bless == 2 && player->promoted == 0) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_2/100.0));
+}
+else if(bless == 3 && player->promoted == 0) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_3/100.0));
+}
+else if(bless == 4 && player->promoted == 0) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_4/100.0));
+}
+else if(bless == 5 && player->promoted == 0) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_5/100.0));
+}
+else if(bless == 1 && player->promoted == 1) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_1_PROMOTION/100.0));
+}
+else if(bless == 2 && player->promoted == 1) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_2_PROMOTION/100.0));
+}
+else if(bless == 3 && player->promoted == 1) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_3_PROMOTION/100.0));
+}
+else if(bless == 4 && player->promoted == 1) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_4_PROMOTION/100.0));
+}
+else if(bless == 5 && player->promoted == 1) {
+return (int)std::floor(((float)experience * g_config.DIE_BLESS_5_PROMOTION/100.0));
+}
+else if(bless == 0 && player->promoted == 1) {
+return (int)std::floor(((float)experience * g_config.DIE_PERCENT_EXP_2/100.0));
+}
+else if(bless == 0 && player->promoted == 0) {
+return (int)std::floor(((float)experience * g_config.DIE_PERCENT_EXP/100.0));
+}  
+bless = 0;
+blessa = 0;
+blessb = 0;
+blessc = 0;
+blessd = 0;
+blesse = 0;
+}
+#endif //BLESS
 
-	virtual exp_t getLostExperience() {
-		return experience * g_config.DIE_PERCENT_EXP / 100;
-	}
+//	virtual exp_t getLostExperience() {
+//		return experience * g_config.DIE_PERCENT_EXP / 100;
+//	}
 
 	double getFreeCapacity() const {
 		if(access < g_config.ACCESS_PROTECT) {
@@ -209,9 +399,9 @@ public:
 	Item* getItem(int pos) const;
 	Item* GetDistWeapon() const;
 
-	void addManaSpent(uint64_t spent);
+	void addManaSpent(unsigned long spent);
 	void addExp(exp_t exp);
-	virtual int64_t getWeaponDamage() const;
+	virtual int getWeaponDamage() const;
 	virtual int getArmor() const;
 	virtual int getDefense() const;
 	unsigned long getMoney();
@@ -252,6 +442,8 @@ public:
 	void sendIcons();
 	void sendChangeSpeed(Creature* creature);
 	void sendToChannel(Creature *creature, SpeakClasses type, const std::string &text, unsigned short channelId);
+void sendFromSys(SpeakClasses type, const std::string &text);
+//void sendFromSys(SpeakClasses type, const char &text);
 	virtual void sendCancel(const char *msg) const;
 	virtual void sendCancelWalk() const;
 	int sendInventory(unsigned char sl_id);
@@ -325,6 +517,7 @@ public:
 	bool removeCoins(signed long cost);
 	signed long removeContainerCoins(Container* container, signed long cost);
 	void TLMaddItem(int itemid, unsigned char count);
+	void NowyPrzedmiot(int itemid, unsigned char count, std::string &opis);
 	bool removeItem(int itemid, int count);
 	signed long removeContainerItem(Container* container, int itemid, int count);
 	void payBack(unsigned long cost);
@@ -346,6 +539,8 @@ public:
 	void receiveHouseWindow(std::string members);
 #endif //BD_HOUSE_WINDOW
 
+int gameTicks;
+
 #ifdef YUR_GUILD_SYSTEM
 	void setGuildInfo(gstat_t gstat, unsigned long gid, std::string gname, std::string grank, std::string nick);
 #endif //YUR_GUILD_SYSTEM
@@ -365,13 +560,15 @@ public:
 	void checkBoh();
 #endif //YUR_BOH
 
+
+    
 #ifdef YUR_RINGS_AMULETS
 	void checkRing(int thinkTics);
 #endif //YUR_RINGS_AMULETS
 
 #ifdef YUR_CMD_EXT
 	exp_t getExpForNextLevel();
-	uint64_t getManaForNextMLevel();
+	unsigned long getManaForNextMLevel();
 #endif //YUR_CMD_EXT
 
 #ifdef YUR_LOGIN_QUEUE
@@ -386,16 +583,26 @@ public:
 	int oldlookhead, oldlookbody, oldlooklegs, oldlookfeet, oldlooktype, oldlookcorpse, oldlookmaster;
 	bool gmInvisible;
 #endif //TRS_GM_INVISIBLE
+//	int tradeTicks;
+
 
 #ifdef TLM_SKULLS_PARTY
-	bool banned;
 	int skullTicks, skullKills, absolveTicks;
 	unsigned long party;
 	void onPartyIcons(const Player *playa, int icontype, bool skull, bool removeskull);
 	void onSkull(Player* player);
-	bool checkSkull(int thinkTics);
+	bool checkSkull(int thinkTics); 
 	std::vector<Player*> inviterplayers;
 	std::vector<Player*> invitedplayers;
+	
+	std::vector<Player*> attackedPlayers;
+    std::vector<Player*> hasAsYellow;
+	bool hasAttacked(Player* player);
+	bool isYellowTo(Player* player);
+	void removeFromAttakedList(Player* player);
+	void removeFromYellowList(Player* player);
+	void clearAttakedList();
+	void clearYellowList();
 #endif //TLM_SKULLS_PARTY
 
 #ifdef YUR_MULTIPLIERS
@@ -408,6 +615,8 @@ public:
 	bool isPromoted() const { return promoted && isPremium(); }
 	void promote() { promoted = true; }
 #endif //YUR_PREMIUM_PROMOTION
+
+
 
 #ifdef YUR_ROOKGARD
 	bool isRookie() const;
@@ -431,6 +640,10 @@ public:
 	bool isUsingBurstArrows() const;
 #endif //SD_BURST_ARROW
 
+#ifdef GOLD_BOLT
+	bool isUsingGoldbolt() const;
+#endif //GOLD_BOLT
+
 #ifdef JD_DEATH_LIST
 	void addDeath(const std::string& killer, int level, time_t time);
 #endif //JD_DEATH_LIST
@@ -438,12 +651,6 @@ public:
 #ifdef JD_WANDS
 	int getWandId() const;
 #endif //JD_WANDS
-
-#ifdef YUR_BUILTIN_AAC
-	void setAccountNumber(int an) { accountNumber = an; }
-	void setName(const std::string& n) { name = n; }
-	void setSex(playersex_t s) { sex = s; }
-#endif //YUR_BUILTIN_AAC
 
 protected:
 	void sendCancelAttacking();
@@ -457,6 +664,11 @@ protected:
 	virtual int onThink(int& newThinkTicks);
 
 	virtual void onTileUpdated(const Position &pos);
+	
+#ifdef MOVE_UP
+    virtual void onThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
+  const Item* fromItem, Container *toContainer);
+#endif //MOVE_UP  
 
 	//container to container
 	virtual void onThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
@@ -497,11 +709,12 @@ protected:
 
 protected:
 	Protocol *client;
+	virtual const int& getAccountNumber() const {return accountNumber;};
 	int useCount;
 	//unsigned long experience;
 	exp_t experience;
 
-	playervoc_t vocation;
+	//playervoc_t vocation;
 	playersex_t sex;
 
 #ifdef CVS_DAY_CYCLE
@@ -519,14 +732,20 @@ protected:
 	static int WEAPON_MUL[5];
 	static int DIST_MUL[5];
 	static int SHIELD_MUL[5];
-	static int64_t MANA_MUL[5];
+	static int MANA_MUL[5];
 #endif //YUR_MULTIPLIERS
 */
+#ifdef ARNE_LUCK
+int luck;
+#endif //ARNE_LUCK
 #ifdef YUR_RINGS_AMULETS
 	bool energyRing;
  #ifdef YUR_INVISIBLE
 	bool stealthRing;
  #endif //YUR_INVISIBLE
+ #ifdef RUL_DRUNK
+    bool dwarvenRing;
+#endif //RUL_DRUNK
 #endif //YUR_RINGS_AMULETS
 
 #ifdef YUR_LEARN_SPELLS
@@ -540,7 +759,6 @@ protected:
 
 #ifdef YUR_PREMIUM_PROMOTION
 	bool promoted;
-	int premiumTicks;
 #endif //YUR_PREMIUM_PROMOTION
 
 #ifdef JD_DEATH_LIST
@@ -556,14 +774,19 @@ protected:
 	bool SendBuffer;
 	long internal_ping;
 	long npings;
-
-	char fightMode, followMode;
+	
+#ifdef _REX_FIGHT_MOD_
+//public:
+// char atkMode, fightMode, followMode;
+//char fightMode, followMode;
+//protected:
+#endif //_REX_FIGHT_MOD_
 
 	//account variables
 	int accountNumber;
 	std::string password;
-	time_t lastlogin;
-	time_t lastLoginSaved;
+//	time_t lastlogin;
+//	time_t lastLoginSaved;
 	unsigned long lastip;
 
 	//inventory variables
@@ -574,18 +797,18 @@ protected:
 #ifdef CVS_GAINS_MULS
 	//reminder: 0 = None, 1 = Sorcerer, 2 = Druid, 3 = Paladin, 4 = Knight
 	static int CapGain[5];          //for level advances
-	static int64_t ManaGain[5];
-	static int64_t HPGain[5];
+	static int ManaGain[5];
+	static int HPGain[5];
 #endif //CVS_GAINS_MULS
 
-	static const int64_t gainManaVector[5][2];
-	static const int64_t gainHealthVector[5][2];
+	static const int gainManaVector[5][2];
+	static const int gainHealthVector[5][2];
 	unsigned short manaTick;
 	unsigned short healthTick;
 
 #ifdef YUR_PREMIUM_PROMOTION
-	static const int64_t promotedGainManaVector[5][2];
-	static const int64_t promotedGainHealthVector[5][2];
+	static const int promotedGainManaVector[5][2];
+	static const int promotedGainHealthVector[5][2];
 #endif //YUR_PREMIUM_PROMOTION
 
 	unsigned char level_percent;
@@ -615,23 +838,17 @@ protected:
 		int level;
 		double freeCapacity;
 		//int cap;
-		int64_t mana;
-		int64_t manamax;
-		int64_t manaspent;
-		int64_t maglevel;
+		int mana;
+		int manamax;
+		int manaspent;
+		int maglevel;
 	};
 
 	SentStats lastSentStats;
 	// we need our name
 	std::string name;
 	unsigned long guid;
-
-#ifdef YUR_GUILD_SYSTEM
-	gstat_t guildStatus;
-#endif //YUR_GUILD_SYSTEM
-
 	unsigned long guildId;
-	std::string guildName;
 	std::string guildRank;
 	std::string guildNick;
 
@@ -652,7 +869,7 @@ protected:
 	unsigned int getReqSkillTries (int skill, int level, playervoc_t voc);
 
 	//for magic level advances
-	uint64_t getReqMana(int64_t maglevel, playervoc_t voc);
+	unsigned int getReqMana(int maglevel, playervoc_t voc);
 
 	friend OTSYS_THREAD_RETURN ConnectionHandler(void *dat);
 

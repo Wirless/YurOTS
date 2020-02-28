@@ -7,7 +7,7 @@
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -69,8 +69,8 @@ public:
 	CreatureState() {};
 	~CreatureState() {};
 
-	int64_t damage;
-	int64_t manaDamage;
+	int damage;
+	int manaDamage;
 	bool drawBlood;
 	std::vector<Creature*> attackerlist;
 };
@@ -95,8 +95,8 @@ public:
 	const SpectatorVec& getSpectators() {return spectatorlist;}
 
 protected:
-	void addCreatureState(Tile* tile, Creature* attackedCreature, int64_t damage, int64_t manaDamage, bool drawBlood);
-	void onAttackedCreature(Tile* tile, Creature* attacker, Creature* attackedCreature, int64_t damage, bool drawBlood);
+	void addCreatureState(Tile* tile, Creature* attackedCreature, int damage, int manaDamage, bool drawBlood);
+	void onAttackedCreature(Tile* tile, Creature* attacker, Creature* attackedCreature, int damage, bool drawBlood);
 	Game *game;
 
 #ifdef YUR_PVP_ARENA
@@ -131,7 +131,84 @@ class Game {
 public:
 	Game();
   ~Game();
+  
+long eventShutdown;
 
+ #ifdef CAYAN_POISONARROW
+  void poisonArrow(Creature* c, const Position& pos);
+#endif //CAYAN_POISONARROW
+    void PoisonMelee(Creature* creature, Creature* target, unsigned char animationColor, unsigned char damageEffect, unsigned char hitEffect, attacktype_t attackType, bool offensive, int maxDamage, int minDamage, long ticks, long count);
+	Map* map;
+  
+#ifdef _NG_BBK_PVP__
+	bool isPvpArena(Creature* c);
+#endif //_NG_BBK_PVP__
+#ifdef _BBK_ANIM_TEXT
+  void sendAnimatedTextExt(Position, int, const std::string&);
+#endif //_BBK_ANIM_TEXT
+#ifdef REX_MUTED
+  void AlreadyMuted(Player *player);
+#endif //REX_MUTED
+//   void RemoveItems(Player* player, const std::string hname, bool first);
+  void newOwner(Player* newbie,Npc* mynpc , const Position& pos, long price);
+    void LooseHouse(Player* player, const Position& pos);
+  #ifdef FIX_REX
+    bool FixByReX(const Tile *toTile);
+  #endif //FIX_REX
+  void StackableUpdate(const Position& pos);
+  #ifdef CAYAN_SPELLBOOK
+  bool setSpellbookText(Player* player, Item* item);
+#endif //CAYAN_SPELLBOOK
+#ifdef BD_DOWN
+	  	Position getTeleportPos(Position to);
+ bool canTeleportItem(Player *player, unsigned short itemid, Position toPos, Position fromPos, int from_stack, unsigned char count);
+ bool canDelete(Player *player, unsigned short itemid, Position toPos, Position fromPos, int from_stack, unsigned char count);
+ bool trashItems(Player *player, Item *trash, Position fromPos, int from_stack, unsigned char count);
+ bool trashObjects(Player *player, Tile *toTile, Item *trash, Position toPos, Position fromPos, int from_stack, unsigned char count);
+ bool checkChangeFloor(Tile *toTile, Tile* downTile);
+void spectatorEffect(Position pos, unsigned char type);
+#endif //BD_DOWN
+bool ThrowInDifferentPosZ(Creature *c,const Position& fromPos, const Position& toPos, const unsigned char from_stack);
+  #ifdef BD_FOLLOW
+void checkCreatureFollow(unsigned long id);
+void playerFollow(Player* player, Creature *followCreature);
+void playerSetFollowCreature(Player* player, unsigned long creatureid);
+#endif //BD_FOLLOW
+
+	void startDecay(Item* item);
+	struct decayBlock{
+		long decayTime;
+		std::list<Item*> decayItems;
+	};
+	std::list<decayBlock*> decayVector;
+ 
+#ifdef CTRL_Y
+    void banPlayer(Player *player, std::string reason, std::string action, std::string comment, bool IPban);
+    void Tutorreport(Player *player, std::string reason, std::string action, std::string comment);
+#endif //CTRL_Y	
+
+	void getSpectators(const Range& range, SpectatorVec& list);
+    void updateTile(const Position& pos);
+#ifdef TILES_WORK
+void TransformOrRemoveItem(const Position& pos,const unsigned short itemID, bool isTile);
+void TilesWork(Player* player, const Position& fromPos, const Position& toPos);
+void fixtilebyrex(const Position& pos, bool logout);
+#endif //TILES_WORK
+
+#ifdef TLM_BEDS 
+        std::string getBedSleeper(const Position pos); 
+          unsigned int getBedID(const Position pos); 
+          Position getBedPos(std::string name); 
+  
+          bool changeBed(const Position pos, unsigned int oldid, std::string sleepname); 
+          bool loadBeds(std::string file); 
+          void Game::sendMagicEffect(Position, unsigned char);
+#endif //TLM BEDS  
+
+#ifdef SDG_VIOLATIONS
+    std::vector<Player*> openViolations;
+#endif
+	
 	/**
 	  * Load a map.
 	  * \param filename Mapfile to load
@@ -139,17 +216,35 @@ public:
 	  * \returns Int 0 built-in spawns, 1 needs xml spawns, 2 needs sql spawns, -1 if got error
 	  */
     int loadMap(std::string filename, std::string filekind);
-
+//void sendAnimatedTextExt(Position, int, const std::string&);	
 	/**
 	  * Get the map size - info purpose only
 	  * \param a the referenced witdh var
 	  * \param b the referenced height var
 	  */
 	void getMapDimensions(int& a, int& b) {
-     a = map->mapwidth;
-     b = map->mapheight;
+     a = map->mapwidth;  
+     b = map->mapheight;  
      return;
   }
+  #ifdef VITOR_RVR_HANDLING
+
+std::string Counsellors[15];
+std::string Reporters[15];
+
+std::string Reports[15];
+	int getSkill(skills_t skilltype, skillsid_t skillinfo) const;
+void OnPlayerDoReport(Player* player, std::string Report);
+
+#endif
+/*---------Voting sys-----------*/
+    bool voting;
+    int voteYes,voteNo;
+/*------------------------------*/ 
+void Game::globalMsg(MessageClasses mclass,const std::string &text);
+
+
+
 
 	void setWorldType(enum_world_type type);
   enum_world_type getWorldType() const {return worldType;}
@@ -193,6 +288,9 @@ public:
 	void thingMove(Creature *creature, Thing *thing,
 			unsigned short to_x, unsigned short to_y, unsigned char to_z, unsigned char count);
 
+#ifdef MOVE_UP
+ void thingMove(Player *player, unsigned char from_cid, unsigned char from_slotid);
+#endif //MOVE_UP
 	//container/inventory to container/inventory
 	void thingMove(Player *player,
 			unsigned char from_cid, unsigned char from_slotid, unsigned short itemid,bool fromInventory,
@@ -209,7 +307,7 @@ public:
 			const Position& fromPos, unsigned char stackPos, unsigned short itemid,
 			unsigned char to_cid, unsigned char to_slotid,
 			bool isInventory, unsigned char count);
-
+	
 	//ground to ground
 	void thingMove(Creature *creature,
 			unsigned short from_x, unsigned short from_y, unsigned char from_z,
@@ -222,6 +320,7 @@ public:
 		* \param dir Direction to turn to
 		*/
 	void creatureTurn(Creature *creature, Direction dir);
+	static double NO_VOC_SPEED, SORC_SPEED, DRUID_SPEED, PALLY_SPEED, KNIGHT_SPEED;
 
 	/**
 	  * Creature wants to say something.
@@ -231,25 +330,36 @@ public:
 	  * \param text The text to say
 	  */
 	void creatureSay(Creature *creature, SpeakClasses type, const std::string &text);
+	int distanceToKill;
 
 	void creatureWhisper(Creature *creature, const std::string &text);
 	void creatureYell(Creature *creature, std::string &text);
   	void creatureSpeakTo(Creature *creature, SpeakClasses type, const std::string &receiver, const std::string &text);
-	void creatureBroadcastMessage(Creature *creature, const std::string &text);
+	void creatureBroadcastMessageWhite(Creature *creature, const std::string &text);
+    void creatureBroadcastMessage(Creature *creature, const std::string &text);
   	void creatureTalkToChannel(Player *player, SpeakClasses type, std::string &text, unsigned short channelId);
 	void creatureMonsterYell(Monster* monster, const std::string& text);
 	void creatureChangeOutfit(Creature *creature);
-
+	
 	bool creatureThrowRune(Creature *creature, const Position& centerpos, const MagicEffectClass& me);
 	bool creatureCastSpell(Creature *creature, const Position& centerpos, const MagicEffectClass& me);
 	bool creatureSaySpell(Creature *creature, const std::string &text);
+	
+#ifdef JIDDO_RAID
+    bool loadRaid(std::string name);
+    bool placeRaidMonster(std::string name, int x, int y, int z);
+#endif //JIDDO_RAID
 
 	void playerAutoWalk(Player* player, std::list<Direction>& path);
 	bool playerUseItemEx(Player *player, const Position& posFrom,const unsigned char  stack_from,
 		const Position &posTo,const unsigned char stack_to, const unsigned short itemid);
-	bool playerUseItem(Player *player, const Position& pos, const unsigned char stackpos, const unsigned short itemid, const unsigned char index);
+	//bool playerUseItem(Player *player, const Position& pos, const unsigned char stackpos, const unsigned short itemid, const unsigned char index);
+		bool playerUseItem(Player *player, const Position& pos, const unsigned char stackpos, const unsigned short itemid, unsigned char index, bool via_walkto /* = false*/);
 	bool playerUseBattleWindow(Player *player, Position &posFrom, unsigned char stackpos, unsigned short itemid, unsigned long creatureid);
 	bool playerRotateItem(Player *player, const Position& pos, const unsigned char stackpos, const unsigned short itemid);
+#ifdef ARNE_LUCK
+void LuckSystem(Player* player, Monster* monster);
+#endif //ARNE_LUCK
 
 	void playerRequestTrade(Player *player, const Position& pos,
 		const unsigned char stackpos, const unsigned short itemid, unsigned long playerid);
@@ -258,33 +368,54 @@ public:
 	void playerCloseTrade(Player* player);
 	void autoCloseTrade(const Item* item, bool itemMoved = false);
   void autoCloseAttack(Player* player, Creature* target);
-
+	
 	void playerSetAttackedCreature(Player* player, unsigned long creatureid);
 
   void changeOutfitAfter(unsigned long id, int looktype, long time);
   void changeSpeed(unsigned long id, unsigned short speed);
 	unsigned long addEvent(SchedulerTask*);
 	bool stopEvent(unsigned long eventid);
+	
+	#ifdef DT_PREMMY
+    bool countPremmy(Player *player);
+    bool getPremmyArea();
+    std::vector< std::pair<Position, Position> > premmytiles;
+    #endif //DT_PREMMY
 
 	//void creatureBroadcastTileUpdated(const Position& pos);
 	void teleport(Thing *thing, const Position& newPos);
+	int record;
+    bool saveRecord();
+    void checkRecord();
+    bool loadRecord();
 
-  std::vector<Player*> BufferedPlayers;
+      
+  std::vector<Player*> BufferedPlayers;   
   void flushSendBuffers();
   void addPlayerBuffer(Player* p);
-
-  std::vector<Thing*> ToReleaseThings;
+  
+  std::vector<Thing*> ToReleaseThings;   
   void FreeThing(Thing* thing);
+  void creatureBroadcastTileUpdated(const Position& pos);
+  
+#ifdef EOTSERV_SERVER_SAVE
+    bool playerSave();
+	bool houseSave();
+	bool guildSave();
+	void autoPlayerSave();
+	void autoHouseSave();
+	void autoguildSave();
+#endif //EOTSERV_SERVER_SAVE
 
   Thing* getThing(const Position &pos,unsigned char stack,Player* player = NULL);
   void addThing(Player* player,const Position &pos,Thing* thing);
   bool removeThing(Player* player,const Position &pos,Thing* thing, bool setRemoved = true);
   Position getThingMapPos(Player *player, const Position &pos);
-
+  
   void sendAddThing(Player* player,const Position &pos,const Thing* thing);
   void sendRemoveThing(Player* player,const Position &pos,const Thing* thing,const unsigned char stackpos = 1,const bool autoclose = false);
   void sendUpdateThing(Player* player,const Position &pos,const Thing* thing,const unsigned char stackpos = 1);
-
+		
 	Creature* getCreatureByID(unsigned long id);
 	Player* getPlayerByID(unsigned long id);
 
@@ -292,14 +423,21 @@ public:
 	Player* getPlayerByName(const std::string &s);
 
 	std::list<Position> getPathTo(Creature *creature, Position start, Position to, bool creaturesBlock=true);
-
+	
 	enum_game_state getGameState();
 	void setGameState(enum_game_state newstate){game_state = newstate;}
-
+	#ifdef ITEMS_BY_NAME
+	typedef std::map<std::string, unsigned short> ItemNameList;
+    ItemNameList itemNameList;
+	#endif //ITEMS_BY_NAME
+	#ifdef TIJN_WILDCARD
+    std::string getNameByWildcard(const std::string &wildcard);
+    bool hasWildcard(const std::string &text);	
+    #endif //TIJN_WILDCARD
 	bool requestAddVip(Player* player, const std::string &vip_name);
 
 	/** Lockvar for Game. */
-  OTSYS_THREAD_LOCKVAR gameLock;
+  OTSYS_THREAD_LOCKVAR gameLock; 
 
 #ifdef CVS_DAY_CYCLE
 	void creatureChangeLight(Player* player, int time, unsigned char lightlevel, unsigned char lightcolor);
@@ -330,7 +468,6 @@ public:
 #endif //TR_SUMMONS
 
 #ifdef TRS_GM_INVISIBLE
-	void creatureBroadcastTileUpdated(const Position& pos);
 #endif //TRS_GM_INVISIBLE
 
 #ifdef TLM_SKULLS_PARTY
@@ -345,32 +482,60 @@ public:
 	static double BURST_DMG_LVL, BURST_DMG_MLVL, BURST_DMG_LO, BURST_DMG_HI;
 #endif //SD_BURST_ARROW
 
+#ifdef GOLD_BOLT
+	void goldbolt(Creature* c, const Position& pos);
+	static double GOLD_DMG_LVL, GOLD_DMG_MLVL, GOLD_DMG_LO, GOLD_DMG_HI;
+#endif //GOLD_BOLT
+
+int getDepot(Container* c, int e);
+
 #ifdef YUR_SHUTDOWN
 	void sheduleShutdown(int minutes);
+	void beforeRestart();
 	void checkShutdown(int minutes);
 #endif //YUR_SHUTDOWN
 
 #ifdef YUR_CMD_EXT
 	void setMaxPlayers(uint32_t newmax);
 #endif //YUR_CMD_EXT
-
+    long checkHouses();
 #ifdef YUR_CLEAN_MAP
 	long cleanMap();
+	long autocleanMap();
+    long beforeClean();
 #endif //YUR_CLEAN_MAP
+//bbkowner
+//    long cleanOwner();
+#ifdef _BBK_AUTOBOARDCASTER
+	long AutoBoardcaster();
+#endif //_BBK_AUTOBOARDCASTER
+#ifdef RUL_WALKTO
+      Position getDestinationPos(Player* player);
+    void checkPlayerWalkTo(unsigned long id);
+    void cancelWalkTo(Player* player);
+#endif //RUL_WALKTO
+#ifdef BD_CONDITION
+        void CreateCondition(Creature* creature, Creature* target, unsigned char animationColor, unsigned char damageEffect, unsigned char hitEffect, attacktype_t attackType, bool offensive, int maxDamage, int minDamage, long ticks, long count);
+        void doFieldDamage(Creature* creature, unsigned char animationColor, unsigned char damageEffect,  unsigned char hitEffect, attacktype_t attackType, bool offensive, int damage);
+        Creature* getCreatureByPosition(int x, int y, int z);
+#endif //BD_CONDITION
 
 #ifdef JD_WANDS
 	void useWand(Creature *creature, Creature *attackedCreature, int wandid);
 #endif //JD_WANDS
 
-	void checkSpell(Player* player, SpeakClasses& type, std::string text);
+	void checkSpell(Player* player, SpeakClasses type, std::string text);
 
 protected:
 	std::map<Item*, unsigned long> tradeItems; //list of items that are in trading state, mapped to the player
-
+	
 	AutoList<Creature> listCreature;
 
 	/*ground -> ground*/
-	bool onPrepareMoveThing(Creature *player, const Thing* thing,
+//	bool onPrepareMoveThing(Creature *player, const Thing* thing,
+//		const Position& fromPos, const Position& toPos, int count);
+
+	bool onPrepareMoveThing(Creature *player, /*const*/ Thing* thing,
 		const Position& fromPos, const Position& toPos, int count);
 
 	/*ground -> ground*/
@@ -404,11 +569,13 @@ protected:
 
 	/*->inventory*/
 	bool onPrepareMoveThing(Player *player, const Item *item, slots_t toSlot, int count);
-
+#ifdef MOVE_UP
+ void thingMoveInternal(Player *player, unsigned char from_cid, unsigned char from_slotid);
+#endif //MOVE_UP
 	//container/inventory to container/inventory
 	void thingMoveInternal(Player *player,
-			unsigned char from_cid, unsigned char from_slotid, unsigned short itemid,
-			bool fromInventory,unsigned char to_cid, unsigned char to_slotid,
+			unsigned char from_cid, unsigned char from_slotid, unsigned short itemid, 
+			bool fromInventory,unsigned char to_cid, unsigned char to_slotid, 
 			bool toInventory,unsigned char count);
 
 	//container/inventory to ground
@@ -433,6 +600,7 @@ protected:
 	bool creatureOnPrepareAttack(Creature *creature, Position pos);
 	void creatureMakeDamage(Creature *creature, Creature *attackedCreature, fight_t damagetype);
 
+
 	bool creatureMakeMagic(Creature *creature, const Position& centerpos, const MagicEffectClass* me);
 	bool creatureOnPrepareMagicAttack(Creature *creature, Position pos, const MagicEffectClass* me);
 
@@ -440,15 +608,15 @@ protected:
 		* Change the players hitpoints
 		* Return: the mana damage and the actual hitpoint loss
 		*/
-	void creatureApplyDamage(Creature *creature, int64_t damage, int64_t &outDamage, int64_t &outManaDamage
+	void creatureApplyDamage(Creature *creature, int damage, int &outDamage, int &outManaDamage
 #ifdef YUR_PVP_ARENA
 		, CreatureVector*
 #endif //YUR_PVP_ARENA
 		);
 
-	void CreateDamageUpdate(Creature* player, Creature* attackCreature, int64_t damage);
-	void CreateManaDamageUpdate(Creature* player, Creature* attackCreature, int64_t damage);
-	void getSpectators(const Range& range, SpectatorVec& list);
+	void CreateDamageUpdate(Creature* player, Creature* attackCreature, int damage);
+	void CreateManaDamageUpdate(Creature* player, Creature* attackCreature, int damage);
+
 
 	OTSYS_THREAD_LOCKVAR eventLock;
 	OTSYS_THREAD_SIGNALVAR eventSignal;
@@ -470,15 +638,10 @@ protected:
 	void checkCreature(unsigned long id);
 	void checkCreatureAttacking(unsigned long id);
 	void checkDecay(int t);
-
+	
 	#define DECAY_INTERVAL  10000
-	void startDecay(Item* item);
-	struct decayBlock{
-		long decayTime;
-		std::list<Item*> decayItems;
-	};
-	std::list<decayBlock*> decayVector;
 
+	
 #ifdef CVS_DAY_CYCLE
 	static const unsigned char LIGHT_LEVEL_DAY = 220;
 	static const unsigned char LIGHT_LEVEL_NIGHT = 25;
@@ -500,12 +663,12 @@ protected:
 	uint32_t max_players;
 	enum_world_type worldType;
 
-	Map* map;
-
+//	Map* map;
+	
 	std::vector<std::string> commandTags;
 	void addCommandTag(std::string tag);
 	void resetCommandTag();
-
+	
 	enum_game_state game_state;
 
 	friend class Commands;
@@ -523,7 +686,7 @@ public:
 	TCallList(boost::function<int(Game*, ArgType)> f1, boost::function<bool(Game*)> f2, std::list<ArgType>& call_list, __int64 interval) :
 	_f1(f1), _f2(f2), _list(call_list), _interval(interval) {
 	}
-
+	
 	void operator()(Game* arg) {
 		if(_eventid != 0 && !_f2(arg)) {
 			int ret = _f1(arg, _list.front());

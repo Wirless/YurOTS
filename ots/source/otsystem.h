@@ -81,11 +81,7 @@ typedef HANDLE OTSYS_THREAD_SIGNALVAR;
 inline __int64 OTSYS_TIME()
 {
   _timeb t;
-#ifdef USING_VISUAL_2005
-  _ftime_s(&t);
-#else
   _ftime(&t);
-#endif // USING_VISUAL_2005
   return ((__int64)t.millitm) + ((__int64)t.time) * 1000;
 }
 
@@ -123,6 +119,33 @@ inline int OTSYS_THREAD_WAITSIGNAL_TIMED(OTSYS_THREAD_SIGNALVAR& signal, OTSYS_T
 }
 
 typedef int socklen_t;
+#ifdef ANTY_DDOS	
+inline void PERROR(const char*a)
+{
+	LPVOID lpMsg;
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+		FORMAT_MESSAGE_FROM_SYSTEM | 
+		FORMAT_MESSAGE_IGNORE_INSERTS, NULL, 
+		GetLastError(), 
+		MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT), 
+		(LPTSTR) &lpMsg, 0, NULL);  
+		fprintf(stderr,"%s:(%d)%s\n",a,GetLastError(),lpMsg); 
+		LocalFree(lpMsg); 
+};
+
+inline void SOCKET_PERROR(const char* a)
+{ 
+	LPVOID lpMsg; 
+	FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+		FORMAT_MESSAGE_FROM_SYSTEM | 
+		FORMAT_MESSAGE_IGNORE_INSERTS, NULL, 
+		WSAGetLastError(), 
+		MAKELANGID(LANG_NEUTRAL,SUBLANG_DEFAULT), 
+		(LPTSTR) &lpMsg, 0, NULL);  
+		fprintf(stderr,"%s:(%d)%s\n",a,WSAGetLastError(),lpMsg); 
+		LocalFree(lpMsg); 
+};
+#endif //ANTY_DDOS
 
 #else  // #if defined WIN32 || defined __WINDOWS__
 

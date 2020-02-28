@@ -82,9 +82,7 @@ extern Actions actions;
 extern Commands commands;
 extern Chat g_chat;
 extern xmlMutexPtr xmlmutex;
-#ifdef CAYAN_SPELLBOOK
-typedef std::vector<std::string> StringVector;
-#endif //CAYAN_SPELLBOOK
+
 extern std::vector< std::pair<unsigned long, unsigned long> > bannedIPs;
 
 GameState::GameState(Game *game, const Range &range)
@@ -218,14 +216,8 @@ void GameState::onAttack(Creature* attacker, const Position& pos, const MagicEff
 #ifdef YUR_RINGS_AMULETS
 		damage = applyAmulets(targetPlayer, damage, me->attackType);
 #endif //YUR_RINGS_AMULETS
-//anty monster kill monster
-if(attacker && dynamic_cast<Monster*>(attacker) &&  dynamic_cast<Monster*>(targetCreature)){
-damage = 0;
-}
-//
-#ifdef _NG_BBK_PVP__    
-//if(!targetCreature) {
-//
+
+#ifdef _NG_BBK_PVP__     
 			pvpArena = isPvpArena(attackPlayer) && isPvpArena(targetPlayer);  
 			Creature *monster = dynamic_cast<Monster*>(targetCreature);
    if (damage > 0) {
@@ -240,14 +232,6 @@ damage = 0;
                }
          }
    }
-   
-   if (damage > 0) {
-       if(attackPlayer && targetPlayer && targetPlayer->atkMode == 1 && !pvpArena){
-          if(targetPlayer->party == 0 || attackPlayer->party == 0 && attackPlayer->party != targetPlayer->party){
-              damage = 0;
-              }
-       }
-}
 
  if (attackPlayer && !monster && damage > 0) {
             Creature *attackedCreature = game->getPlayerByID(attackPlayer->attackedCreature);
@@ -261,8 +245,6 @@ damage = 0;
                 }
             }
     }
-//
-//}
 #endif //_NG_BBK_PVP__
 
 		if (damage > 0) {
@@ -328,7 +310,6 @@ damage = 0;
 			}
 			else
 #endif //YUR_DRAINS
-/*
 #ifdef BBK_MAGIC_DAMAGE
 if(attackPlayer && attackPlayer->getItem(SLOT_AMMO) && attackPlayer->getItem(SLOT_AMMO)->getID() == ITEM_BEAR){
 double newdamage = damage*g_config.BEAR/100.0; // 5% dmg adden
@@ -430,7 +411,6 @@ if(attackPlayer && attackPlayer->getItem(SLOT_ARMOR) && attackPlayer->getItem(SL
 double newdamage = damage*g_config.MAGIC_PLATE_ARMOR/100.0; // 5% dmg adden
 damage += (int)newdamage; // added to main damage
 }
-*/
 
 			{
 				game->creatureApplyDamage(targetCreature, damage, damage, manaDamage
@@ -467,7 +447,6 @@ damage += (int)newdamage; // added to main damage
 				targetCreature->setInvisible(0);
 				game->creatureChangeOutfit(targetCreature);
 			}
-/*
 // Blue Robe
 if(attackPlayer && attackPlayer->getItem(SLOT_ARMOR) && attackPlayer->getItem(SLOT_ARMOR)->getID() == ITEM_BLUEROBE){
 double newdamage = damage*g_config.BLUE_RBE/100.0; // 3% dmg adden
@@ -478,13 +457,8 @@ if(attackPlayer && attackPlayer->getItem(SLOT_HEAD) && attackPlayer->getItem(SLO
 double newdamage = damage*g_config.BLUE_RBE/100.0; // 3% dmg adden
 damage += (int)newdamage; // added to main damage
 }
-*/
-//bbk best hit
-       if(attackPlayer && damage > attackPlayer->damageMagic){
-       attackPlayer->damageMagic = damage;
-       //attackPlayer->sendAnimatedText(attackPlayer->pos, 180, "Best Hit!");
-       }
-//bbk best hit
+
+
 		addCreatureState(tile, targetCreature, damage, manaDamage, me->drawblood);
 	}
 
@@ -579,16 +553,12 @@ damage += (int)newdamage; // added to main damage
 		//Add exhaustion
 		if(me->causeExhaustion(true) /*!areaTargetVec.empty())*/)
 		{
+#ifdef YUR_HEAL_EXHAUST
 			if (!me->offensive && me->minDamage != 0)	// healing
-#ifdef FIXY
-				attackPlayer->exhaustedTicks += g_config.EXHAUSTED_HEAL;
+				attackPlayer->exhaustedTicks = g_config.EXHAUSTED_HEAL;
 			else
-				attackPlayer->exhaustedTicks += g_config.EXHAUSTED;
-#else
-                attackPlayer->exhaustedTicks = g_config.EXHAUSTED_HEAL;
-			else
+#endif //YUR_HEAL_EXHAUST
 				attackPlayer->exhaustedTicks = g_config.EXHAUSTED;
-#endif //FIXY
 		}
 
 		//Fight symbol
@@ -602,25 +572,6 @@ damage += (int)newdamage; // added to main damage
 		}
 	}
 
-#ifdef __BBK_PVM_ARENA
-#ifdef YUR_PVP_ARENA
-    for (CreatureVector::iterator it = arenaLosers.begin(); it != arenaLosers.end(); ++it)
-    {
-        Tile* tile = game->getTile((*it)->pos);
-               
-        if (tile)
-        {
-           if(dynamic_cast<Monster*>(*it)){
-               Monster* monster = dynamic_cast<Monster*>(*it);
-               game->removeCreature(monster);
-           }
-           else{
-            game->teleport(*it, tile->getPvpArenaExit());  
-           }
-        }
-    }
-#endif //YUR_PVP_ARENA
-#else
 #ifdef YUR_PVP_ARENA
 	for (CreatureVector::iterator it = arenaLosers.begin(); it != arenaLosers.end(); ++it)
 	{
@@ -629,7 +580,6 @@ damage += (int)newdamage; // added to main damage
 			game->teleport(*it, tile->getPvpArenaExit());	// kick losers
 	}
 #endif //YUR_PVP_ARENA
-#endif //__BBK_PVM_ARENA
 }
 
 void GameState::onAttack(Creature* attacker, const Position& pos, Creature* attackedCreature)
@@ -687,39 +637,6 @@ void GameState::onAttack(Creature* attacker, const Position& pos, Creature* atta
 	bool blood;
 	if(damage != 0)
 	{
-#ifdef MAGIC_DAMAGE
-                            // F-AXE,F-SWORD,P-DAGGER
-              if(attackPlayer)
-{
-   for (int slot = SLOT_RIGHT; slot <= SLOT_LEFT; slot++) 
-   {
-		if(g_config.EFFECT_ATACK && attackPlayer->getItem(slot) && (attackPlayer->getItem(slot)->getID() == 2432/*fire axe*/ || attackPlayer->getItem(slot)->getID() == 2392)/*fire sword*/)
-        {
-             game->CreateCondition(attackedCreature, attacker, 199, NM_ME_HITBY_FIRE, NM_ME_HITBY_FIRE, ATTACK_FIRE, true, 10, 10, 1000, 1);      
-        }
-       if(g_config.EFFECT_ATACK && attackPlayer->getItem(slot) && (attackPlayer->getItem(slot)->getID() == 2411 /*poison dagger*/)) 
-        {
-             game->CreateCondition(attackedCreature, attacker, 30, NM_ME_POISEN_RINGS, NM_ME_POISEN_RINGS, ATTACK_POISON, true, 2, 2, 1000, 3); 
-        }
-   }
-}
-// P-BOLT ENERGY
-if(attackPlayer)
-{
-for (int slot = SLOT_AMMO; slot <= SLOT_RING; slot++)
-if(g_config.EFFECT_ATACK && attackPlayer->getItem(slot) && (attackPlayer->getItem(slot)->getID() == 2547/*p-bolt*/ )) {
-game->CreateCondition(attackedCreature, attacker, 199, NM_ME_ENERGY_DAMAGE, NM_ME_ENERGY_DAMAGE, ATTACK_ENERGY, true, 10, 10, 2000, 1);      
-}
-}
-// Thunder Hammer Energy
-if(attackPlayer)
-{
-for (int slot = SLOT_RIGHT; slot <= SLOT_LEFT; slot++) 
-if(g_config.EFFECT_ATACK && attackPlayer->getItem(slot) && (attackPlayer->getItem(slot)->getID() == 2421/*Thunder Hammer*/ )) {
-game->CreateCondition(attackedCreature, attacker, 199, NM_ME_ENERGY_DAMAGE, NM_ME_ENERGY_DAMAGE, ATTACK_ENERGY, true, 10, 10, 2000, 1);      
-}
-}
-#endif //MAGIC_DAMAGE
 #ifdef YUR_ICE_RAPIER
 		if (attackPlayer)
 			for (int slot = SLOT_RIGHT; slot <= SLOT_LEFT; slot++)
@@ -750,8 +667,6 @@ game->CreateCondition(attackedCreature, attacker, 199, NM_ME_ENERGY_DAMAGE, NM_M
           }    
 #endif //PALL_REQ_LVL
 
-
-
 #ifdef YUR_RINGS_AMULETS
 		damage = applyAmulets(attackedPlayer, damage, ATTACK_PHYSICAL);
 #endif //YUR_RINGS_AMULETS
@@ -763,27 +678,27 @@ if(attackPlayer){
     switch(rand_hit){
         case 23:
             critcial_hit = random_range(25, 55);
-                attackPlayer->sendAnimatedText(attackPlayer->pos, 169, "Critical! Hit");
+                attackPlayer->sendAnimatedText(attackPlayer->pos, 169, "Critical Hit");
         break;
         case 24:
              critcial_hit = random_range(25, 55);
-                attackPlayer->sendAnimatedText(attackPlayer->pos, 169, "Critical! Hit");
+                attackPlayer->sendAnimatedText(attackPlayer->pos, 169, "Critical Hit");
         break;
         case 69:
             critcial_hit = random_range(75, 120);
-                attackPlayer->sendAnimatedText(attackPlayer->pos, 198, "Critical! Hit");
+                attackPlayer->sendAnimatedText(attackPlayer->pos, 198, "Critical Hit");
         break;
         case 70:
             critcial_hit = random_range(75, 120);
-                attackPlayer->sendAnimatedText(attackPlayer->pos, 198, "Critical! Hit");
+                attackPlayer->sendAnimatedText(attackPlayer->pos, 198, "Critical Hit");
         break;
         case 46:
             critcial_hit = random_range(125, 200);
-                attackPlayer->sendAnimatedText(attackPlayer->pos, 180, "Critical! Hit");
+                attackPlayer->sendAnimatedText(attackPlayer->pos, 180, "Critical Hit");
         break;
         case 47:
             critcial_hit = random_range(125, 200);
-                attackPlayer->sendAnimatedText(attackPlayer->pos, 180, "Critical! Hit");
+                attackPlayer->sendAnimatedText(attackPlayer->pos, 180, "Critical Hit");
         break;
         default:
             critcial_hit = 0;
@@ -791,22 +706,6 @@ if(attackPlayer){
     }
 
     damage += critcial_hit;
-}
-#endif
-#ifdef _VIRTELIO_
-if(attackPlayer){
-int loshit = random_range(0, 100); 
-int tablica[][2] = { {1,231}, {12,65}, {11,56}, {5,69}, {19,178}, {65,321}, {89,198}, {98,231},
-                          {56,98}, {32,326}, {97,236}, {44,152}, {65,1}, {88,546}, {41,325}, {55,555}
-                       };
-int ile = sizeof(tablica) / sizeof(tablica[2]);
-for(int i = 0; i < ile; ++i){
-if(loshit == tablica[i][1]){
- attackPlayer->sendAnimatedText(attackPlayer->pos, 180, "CRITICAL!");
- damage += tablica[i][2];
- break;
-}
-} 
 }
 #endif
         
@@ -839,34 +738,14 @@ if(loshit == tablica[i][1]){
 	}
 #endif //BDB_REPLACE_SPEARS
 
-#ifdef __BBK_PVM_ARENA
-#ifdef YUR_PVP_ARENA
-    for (CreatureVector::iterator it = arenaLosers.begin(); it != arenaLosers.end(); ++it)
-    {
-        Tile* tile = game->getTile((*it)->pos);
-               
-        if (tile)
-        {
-           if(dynamic_cast<Monster*>(*it)){
-               Monster* monster = dynamic_cast<Monster*>(*it);
-               game->removeCreature(monster);
-           }
-           else{
-            game->teleport(*it, tile->getPvpArenaExit());  
-           }
-        }
-    }
-#endif //YUR_PVP_ARENA
-#else
 #ifdef YUR_PVP_ARENA
 	for (CreatureVector::iterator it = arenaLosers.begin(); it != arenaLosers.end(); ++it)
 	{
 		Tile* tile = game->getTile((*it)->pos);
 		if (tile)
-			game->teleport(*it, tile->getPvpArenaExit());	// kick losers
+			game->teleport(*it, tile->getPvpArenaExit());
 	}
 #endif //YUR_PVP_ARENA
-#endif //__BBK_PVM_ARENA
 }
 
 void GameState::addCreatureState(Tile* tile, Creature* attackedCreature, int damage, int manaDamage, bool drawBlood)
@@ -953,70 +832,26 @@ void GameState::onAttackedCreature(Tile* tile, Creature *attacker, Creature* att
 		//Prepare body
 		Item *corpseitem = Item::CreateItem(attackedCreature->getLookCorpse());
 		corpseitem->pos = CreaturePos;
-#ifdef RAVEN_SUMMON_DELETE
-        Monster *attackedMonster = dynamic_cast<Monster*>(attackedCreature);
-		bool summonek = false;
-		Position deathpos;
-		if(attackedCreature && attackedMonster && attackedMonster->getMaster())
-		{
-			summonek = true;
-			deathpos = attackedCreature->pos;
-			
-		}else
-#endif
-//bbkowner
-        corpseitem->setOwner(attacker->getName());
 		tile->addThing(corpseitem);
 
 		//Add eventual loot
 		Container *lootcontainer = dynamic_cast<Container*>(corpseitem);
 		if(lootcontainer) {
 			attackedCreature->dropLoot(lootcontainer);
-#ifdef HUCZU_LOOT_INFO
-          Monster* monster = dynamic_cast<Monster*>(attackedCreature);
-          Player* atakujacy = dynamic_cast<Player*>(attacker);
-			if(monster && atakujacy){
-  	          std::stringstream ss;
-	          ss << "Loot of " << monster->getName() << ": " << lootcontainer->getContentDescription() << ".";
-	          atakujacy->sendTextMessage(MSG_INFO, ss.str().c_str());
-           }
-#endif //HUCZU_LOOT_INFO
 		}
-#ifdef ON_TILE
-if(attackedplayer){
-            actions.luaWalkOff(attackedplayer,attackedplayer->pos,tile->ground->getID(),tile->ground->getUniqueId(),tile->ground->getActionId()); //CHANGE onWalk
-			attackedplayer->onThingDisappear(attackedplayer,stackpos);
-			attackedplayer->die();        //handles exp/skills/maglevel loss
-		}
-#endif //ON_TILE		
 
 		if(attackedplayer){
 			attackedplayer->onThingDisappear(attackedplayer,stackpos);
 			attackedplayer->die();        //handles exp/skills/maglevel loss
 		}
 		//remove creature
-  Monster* monster = dynamic_cast<Monster*>(attackedCreature);
 		game->removeCreature(attackedCreature);
 		// Update attackedCreature pos because contains
 		//  temple position for players
 		attackedCreature->pos = CreaturePos;
-#ifdef RAVEN_SUMMON_DELETE
-if(summonek){
-			SpectatorVec lista;
-			SpectatorVec::iterator ktos;
-			game->getSpectators(Range(deathpos, true), lista);
-			for(ktos = lista.begin(); ktos != lista.end(); ++ktos) {
-				Player* spectek = dynamic_cast<Player*>(*ktos);
-				if(spectek){
-					spectek->sendMagicEffect(deathpos, NM_ME_PUFF);
-				}
-			}
-		}else
-#endif
+
 		//add body
-//if(!monster->isPlayersSummon()){
 		game->sendAddThing(NULL,corpseitem->pos,corpseitem);
-//    }
 
 if(attackedplayer){
         Item *krzyzyk = Item::CreateItem(ITEM_KRZYZYK,1);
@@ -1077,11 +912,6 @@ if(attackedplayer){
 			attackedplayer->onThingAppear(corpseitem);
 			attackedplayer->onThingAppear(krzyzyk);
 		}
-#ifdef RAVEN_SUMMON_DELETE		
-		if(summonek) delete corpseitem;
-else
-#endif
-		corpseitem->setOwner(attacker->getName());
 		game->startDecay(corpseitem);
 
 		//Get all creatures that will gain xp from this kill..
@@ -1146,7 +976,6 @@ else
 		Item* splash = Item::CreateItem(dead? ITEM_POOL : ITEM_SPLASH, attackedCreature->bloodsplash);
 		game->addThing(NULL, CreaturePos, splash);
 		game->startDecay(splash);
-		game->updateTile(CreaturePos); //bbk blood
 	} 
 #else
 	if((drawBlood || attackedCreature->health <= 0) && damage > 0) {
@@ -1581,7 +1410,6 @@ int SET_TIME = (long)g_config.getGlobalNumber("bedregain",60);
 				Guilds::ReloadGuildInfo(p);
 #endif //YUR_GUILD_SYSTEM
 #ifdef ELEM_VIP_LIST
-                fixtilebyrex(p->pos,false);
 				vipLogin(p);
 #endif //ELEM_VIP_LIST
 			}
@@ -1705,28 +1533,14 @@ stopEvent(c->eventCheckFollow);
 		#endif
 
 #ifdef ELEM_VIP_LIST
-        fixtilebyrex(player->pos,true);
 		vipLogout(c->getName());
 #endif //ELEM_VIP_LIST
 	}
-#ifdef ON_TILE
-if(player) //CHANGE onWalk
-{
-    Tile* fromT = getTile(player->pos);
-    actions.luaWalkOff(player,player->pos,fromT->ground->getID(),fromT->ground->getUniqueId(),fromT->ground->getActionId());
-}
-#endif //ON_TILE
+
 	this->FreeThing(c);
 	return true;
 }
-#ifdef MOVE_UP
-void Game::thingMove(Player *player, unsigned char from_cid, unsigned char from_slotid)
-{
- OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::thingMove() - 0");
-  
- thingMoveInternal(player, from_cid, from_slotid);
-}
-#endif //MOVE_UP
+
 void Game::thingMove(Creature *creature, Thing *thing,
 	unsigned short to_x, unsigned short to_y, unsigned char to_z, unsigned char count)
 {
@@ -1755,10 +1569,8 @@ void Game::thingMove(Creature *creature, unsigned short from_x, unsigned short f
 	if(!toTile)
 		return;
 
-#ifdef FIXY
 	if (toTile->isHouse() && !fromTile->isHouse())
 		return;
-#endif //FIXY
 
 	Thing* thing = fromTile->getThingByStackPos(stackPos);
 	if(!thing)
@@ -1792,7 +1604,6 @@ void Game::thingMove(Player *player,
 {
 	OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::thingMove() - 4");
 
-#ifdef FIXY
 	Tile *toTile = getTile(toPos.x, toPos.y, toPos.z);
 	if(!toTile)
 		return;
@@ -1802,7 +1613,6 @@ void Game::thingMove(Player *player,
 		if(!fromTile->isHouse() && toTile->isHouse())	
 			return;
 	}
-#endif //FIXY
 
 	thingMoveInternal(player, from_cid, from_slotid, itemid, fromInventory, toPos, count);
 }
@@ -1818,90 +1628,20 @@ void Game::thingMove(Player *player,
 }
 
 /*ground -> ground*/
-#ifdef FIXY
-bool Game::onPrepareMoveThing(Creature* player, /*const*/ Thing* thing,
-const Position& fromPos, const Position& toPos, int count)
-{
- 	const Creature* movingCreature = dynamic_cast<const Creature*>(thing);
-
-		if ((player->access < g_config.ACCESS_REMOTE || dynamic_cast<const Player*>(thing)) && 
-		((abs(player->pos.x - fromPos.x) > 1) || (abs(player->pos.y - fromPos.y) > 1) || (player->pos.z != fromPos.z))) 
-	{
-		player->sendCancel("Za daleko...");
-		return false;
- }
- else if( ((abs(fromPos.x - toPos.x) > thing->throwRange) || (abs(fromPos.y - toPos.y) > thing->throwRange)
-  || (fromPos.z != toPos.z)) && player->access >= g_config.ACCESS_PROTECT) {
-        if(player == thing)
-           teleport(player,toPos);
-        else
-           teleport(thing,toPos);
-    }	
-
-	else if ((player->access < g_config.ACCESS_REMOTE || dynamic_cast<const Player*>(thing)) && ((abs(fromPos.x - toPos.x) > thing->throwRange || abs(fromPos.y - toPos.y) > thing->throwRange || (abs(fromPos.z - toPos.z+1) > thing->throwRange)))) {
-        player->sendCancel("Destination is out of reach.");
-		return false;
-	}
-
-          
-	    else if(player->access < g_config.ACCESS_REMOTE && movingCreature && fromPos.z != toPos.z){
-    player->sendCancel("Za daleko...");
-    return false;
-}
-
-	else {
-		const Item* item = dynamic_cast<const Item*>(thing);
-		if(item) {
-			int blockstate = 0;
-			if(item->isBlocking())
-				blockstate |= BLOCK_SOLID;
-
-			if(item->isPickupable() || !item->isNotMoveable())
-				blockstate |= BLOCK_PICKUPABLE;
-
-			if(blockstate != 0) {
-				switch(map->canThrowObjectTo(fromPos, toPos, blockstate)) {
-					case RET_NOERROR:
-						return true;
-						break;
-
-					case RET_CANNOTTHROW:
-						player->sendCancel("Nie mozesz tam rzucic.");
-						return false;
-						break;
-
-					case RET_CREATUREBLOCK:
-					case RET_NOTENOUGHROOM:
-						player->sendCancel("Przykro mi, nie ma miejsca.");
-						return false;
-						break;
-
-					default:
-						player->sendCancel("Sorry not possible.");
-						return false;
-						break;
-				}
-			}
-		}
-	}
-
-	return true;
-}
-#else //FIXY
 bool Game::onPrepareMoveThing(Creature* player, const Thing* thing,
 	const Position& fromPos, const Position& toPos, int count)
 {
-	if ((player->access < g_config.ACCESS_REMOTE || dynamic_cast<const Player*>(thing)) &&
-		((abs(player->pos.x - fromPos.x) > 1) || (abs(player->pos.y - fromPos.y) > 1) || (player->pos.z != fromPos.z)))
+	if ((player->access < g_config.ACCESS_REMOTE || dynamic_cast<const Player*>(thing)) && 
+		((abs(player->pos.x - fromPos.x) > 1) || (abs(player->pos.y - fromPos.y) > 1) || (player->pos.z != fromPos.z))) 
 	{
-		player->sendCancel("Za daleko...");
+		player->sendCancel("Jestes zbyt daleko... Podejdz blizej do przedmiotu, ktory chcesz przesunac");
 		return false;
 	}
-	else if ((player->access < g_config.ACCESS_REMOTE || dynamic_cast<const Player*>(thing)) &&
+	else if ((player->access < g_config.ACCESS_REMOTE || dynamic_cast<const Player*>(thing)) && 
 		((abs(fromPos.x - toPos.x) > thing->throwRange) || (abs(fromPos.y - toPos.y) > thing->throwRange)
-		|| (fromPos.z != toPos.z) /*TODO: Make it possible to throw items to different floors ))*/
+		|| (fromPos.z != toPos.z) /*TODO: Make it possible to throw items to different floors*/ )) 
 	{
-		player->sendCancel("Destination is out of reach.");
+		player->sendCancel("Miejsce do ktorego chcesz przerzucic przedmiot jest poza zasiegiem.");
 		return false;
 	}
 	else {
@@ -1921,27 +1661,27 @@ bool Game::onPrepareMoveThing(Creature* player, const Thing* thing,
 						break;
 
 					case RET_CANNOTTHROW:
-						player->sendCancel("Nie mozesz tam rzucic.");
+						player->sendCancel("Niemozesz tego tam rzucic.");
 						return false;
 						break;
 
 					case RET_CREATUREBLOCK:
 					case RET_NOTENOUGHROOM:
-						player->sendCancel("Przykro mi, nie ma miejsca.");
+						player->sendCancel("Miejsca do ktorego chcesz przerzucic przedmiot jest juz zajete.");
 						return false;
 						break;
 
 					default:
-						player->sendCancel("Sorry not possible.");
+						player->sendCancel("To jest niemozliwe.");
 						return false;
 						break;
 				}
 			}
 		}
 	}
+
 	return true;
 }
-#endif //FIXY
 
 /*ground -> ground*/
 bool Game::onPrepareMoveThing(Creature* creature, const Thing* thing,
@@ -1992,15 +1732,6 @@ bool Game::onPrepareMoveThing(Creature* creature, const Thing* thing,
 #endif
 		return false;
 	}
-//bbkowner	
-//	else if (item && item->getOwner() != "") {
-//			creature->sendCancel("Nie jestes wlascicielem.");
-//#ifdef __DEBUG__
-//		cout << creature->getName() << " probuje przesunac item, ktorego nie jest wlascicielem(itemHasOwner)!" << std::endl;
-//#endif
-//		return false;
-//	}
-//bbkowner
 
 #ifdef TLM_HOUSE_SYSTEM
 	if (item && toTile && toTile->isHouse())
@@ -2080,24 +1811,7 @@ bool Game::onPrepareMoveThing(Player* player,
 		player->sendCancel("Miejsce do ktorego chcesz przerzucic przedmiot jest poza twoim zasiegiem.");
 		return false;
 	}
-//bbkowner
-//  const Player *play = dynamic_cast<const Player*>(player);
-  const Item *fit = dynamic_cast<const Item*>(fromItem);
-//     Item *item = dynamic_cast<Item*>(tile->getThingByStackPos(tile->getThingCount()-1));
-//  const int oldstackpos = (const)fromPos->getThingStackPos(fit);
-// unsigned char stackpos = 
-//  Item *item = dynamic_cast<Item*>(getThing(fromPos, toPos, player));
-//	if(fit->getOwner() != "" && play->getName() != fit->getOwner()){
-//    Item *item = getThingfromPos(fromPos);
-//	if(fromItem->getOwner()){
-    
-//  const Item *fit2 = fromItem->getID();
-    
-//		if((fit->owner != "") ) {
-//		player->sendCancel("Nie jestes wlascicielem.");
-//		return false;
-//	}
-//bbkowner
+
 	if(!fromItem->isPickupable()) {
 		player->sendCancel("Nie mozesz przesunac tego przedmiotu.");
 		return false;
@@ -2205,13 +1919,6 @@ bool Game::onPrepareMoveThing(Player *player, const Position& fromPos, const Ite
 		player->sendCancel("Jestes zbyt daleko... Podejdz blizej");
 		return false;
 	}
-//bbkowner
-//Item *itemm = item;
-//	if(item->getOwner() != "" && player->getName() != item->getOwner()){
-//		player->sendCancel("Nie jestes wlascicielem.");
-//		return false;
-//	}
-//bbkowner
 	else if(!item->isPickupable()) {
 		player->sendCancel("Niemozesz przesunac tego przedmiotu.");
 		return false;
@@ -2242,11 +1949,7 @@ bool Game::onPrepareMoveThing(Player *player, slots_t fromSlot, const Item *from
 bool Game::onPrepareMoveThing(Player *player, const Container *fromContainer, const Item *fromItem,
 	slots_t toSlot, const Item *toItem, int count)
 {
-	#ifdef _REX_FIGHT_MOD_
-    if (toItem && (toItem->getID() == fromItem->getID() && !toItem->isStackable())){
-    #else
 	if(toItem && (!toItem->isStackable() || toItem->getID() != fromItem->getID())) {
-    #endif //Segundo em container -> inventory
 		player->sendCancel("Przepraszam, ale brakuje tutaj miejsca.");
 		return false;
 	}
@@ -2379,65 +2082,6 @@ bool Game::onPrepareMoveThing(Player *player, const Item *item,
 	return false;
 }
 
-
-#ifdef MOVE_UP
-void Game::thingMoveInternal(Player *player, unsigned char from_cid, unsigned char from_slotid)
-{
- Container *fromContainer = NULL;
- Container *toContainer = NULL;
- Item *fromItem = NULL;
-    
-    fromContainer = player->getContainer(from_cid);
-    
-    if(!fromContainer)
-        return;
-        
-    if(fromContainer->getParent() == NULL)
-        return;
-    
- toContainer = fromContainer->getParent();
- fromItem = fromContainer->getItem(from_slotid);
- 
- if(!toContainer || !fromItem)
-     return;
- 
- if(toContainer->size() + 1 > toContainer->capacity()) {  
-  player->sendCancel("Sorry not enough room.");
-  return;
- }
- 
- fromContainer->removeItem(fromItem);
- toContainer->addItem(fromItem);
- 
- Position fromPos = (fromContainer->pos.x == 0xFFFF ? player->pos : fromContainer->pos);
- Position toPos = (toContainer->pos.x == 0xFFFF ? player->pos : toContainer->pos);
- 
- SpectatorVec list;
- SpectatorVec::iterator it;
-    if(fromPos == toPos) {
-  getSpectators(Range(fromPos, false), list);
- }
- else {
-  getSpectators(Range(fromPos, toPos), list);
- }
- if(!list.empty()) {
-     //players
-     for(it = list.begin(); it != list.end(); ++it) {
-      if(dynamic_cast<Player*>(*it)) {
-       (*it)->onThingMove(player, fromContainer, from_slotid, fromItem, toContainer);
-      }
-     }
-     //none-players
-     for(it = list.begin(); it != list.end(); ++it) {
-         if(!dynamic_cast<Player*>(*it)) {
-              (*it)->onThingMove(player, fromContainer, from_slotid, fromItem, toContainer);
-         }
-     }
- }
- else
- player->onThingMove(player, fromContainer, from_slotid, fromItem, toContainer);
-}
-#endif //MOVE_UP
 //container/inventory to container/inventory
 void Game::thingMoveInternal(Player *player,
 	unsigned char from_cid, unsigned char from_slotid, unsigned short itemid,
@@ -3360,47 +3004,7 @@ void Game::thingMoveInternal(Creature *creature, unsigned short from_x, unsigned
 	oldPos.x = from_x;
 	oldPos.y = from_y;
 	oldPos.z = from_z;
-#ifdef PARCEL_FLOOR
-if(fromTile && playerMoving && player)//TODO: abs check
-    {
- const Tile* down = getTile(to_x, to_y, to_z+1);
-       if(down && down->zItem >= 3 && playerMoving->canMovedTo(down)) {
-if(getTile(to_x, to_y, to_z) == NULL){
- teleport(playerMoving, Position(to_x, to_y, to_z+1));
-            return;
 
-                        }
-                    }
-                }
-if(fromTile && playerMoving && player)//TODO: abs check
-    {
- const Tile* down = getTile(to_x, to_y, to_z+1);
-if(toTile && toTile->zItem >= 3 && fromTile->zItem <= 1) {
-            playerMoving->sendCancelWalk();
-            player->sendCancel("Sorry, not possible.");
-            return;
-        }
-        else if(toTile && toTile->zItem >= 2 && fromTile->zItem <= 0) {
-             playerMoving->sendCancelWalk();
-             player->sendCancel("Sorry, not possible.");
-             return;
-        }
-        else if(fromTile->zItem >= 3 && player == playerMoving)
-        {
-                if(getTile(from_x, from_y, from_z-1) == NULL) //going up
-                {
-                    Tile* newTile = getTile(to_x, to_y, to_z-1);
-                    if(newTile && newTile->ground && playerMoving->canMovedTo(newTile))
-                    {
-                        if(newTile->ground->getID() != 460 && newTile->ground->getID() != 459) {
-                            teleport(playerMoving, Position(to_x, to_y, to_z-1));
-                            return;
-                        }
-                    }
-                }
-                }
-                }
-#endif //PARCEL_FLOOR
 #ifdef TP_TRASH_BINS
 	if(toTile)
 	{
@@ -3737,19 +3341,6 @@ NM_ME_MAGIC_ENERGIE);
 		
 		if(playerMoving && toTile && fromTile && toTile->isPz() && fromTile->isPz() && (toTile->ground->getID() == 416 || toTile->ground->getID() == 426 || toTile->ground->getID() == 446 || toTile->ground->getID() == 549))
   {
-#ifdef ON_TILE
-if(playerMoving && toTile && fromTile && fromTile->ground)
-        {
-            actions.luaWalk(playerMoving,playerMoving->pos,toTile->ground->getID(),toTile->ground->getUniqueId(),toTile->ground->getActionId()); //CHANGE onWalk
-        }
-
-if(playerMoving && toTile && fromTile && fromTile->ground)
-        {
-            actions.luaWalkOff(playerMoving,oldPos,fromTile->ground->getID(),fromTile->ground->getUniqueId(),fromTile->ground->getActionId()); //CHANGE onWalk
-        }
-#endif //ON_TILE      
-
-                           
         int e = 0;
          Container* c = playerMoving->getDepot(1);
                std::stringstream s;
@@ -4038,108 +3629,6 @@ void Game::creatureSay(Creature *creature, SpeakClasses type, const std::string 
 {
 	OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::creatureSay()");
 
- Player *player = dynamic_cast<Player*>(creature);
-           
-
-#ifdef EXANA_ANI  
-if(player && text == "exana ani") {
-
-         if(player->mana < 200) {
-             player->sendCancel("You do not have enough mana."); 
-             sendMagicEffect(player->pos, NM_ME_PUFF);
-             return;
-         }
-         if(player->maglevel < 15) {
-             player->sendCancel("You do not have the magic level."); 
-             sendMagicEffect(player->pos, NM_ME_PUFF);
-             return;
-         }
-         if(player->vocation != 1)
-{
-player->sendTextMessage(MSG_SMALLINFO, "You do not have the required vocation.");  
-player->sendMagicEffect(player->pos, 2);    
-return;
-} 
-         player->mana -= 200;
-         player->addManaSpent(200);
-         SpectatorVec list;
-		 SpectatorVec::iterator it;
-		 getSpectators(Range(creature->pos), list);
-		 for(it = list.begin(); it != list.end(); ++it) {
-			if(Creature *c = dynamic_cast<Creature*>(*it)) {
-	if(c)
-{
-		c->setInvisible(0);
-		creatureChangeOutfit(c);
-			}
-		 }
-		 player->sendMagicEffect(player->pos, NM_ME_MAGIC_ENERGIE);
-	}	 
-    }
-#endif //EXANA_ANI
-
-#ifdef WILD_GROWTH
- if(player && text == "exevo grav vita")
- {
-      Tile *tile = NULL;
-      Position wgpos;
-      wgpos.z = player->pos.z;
-       switch(player->direction)
-        {
-                case NORTH:
-                wgpos.x = player->pos.x;
-                wgpos.y = player->pos.y-1;
-                break;
-              case SOUTH:
-                wgpos.x = player->pos.x;
-                wgpos.y = player->pos.y+1;
-		        break;
-              case EAST:
-                wgpos.x = player->pos.x+1;
-                wgpos.y = player->pos.y;
-                break;
-              case WEST:
-                wgpos.x = player->pos.x-1;
-                wgpos.y = player->pos.y;
-			    break;
-			  default:
-                break;
-            }
-            tile = getTile(wgpos.x, wgpos.y, wgpos.z);
-            if(!tile || tile->isBlocking(BLOCK_SOLID,false,false) || tile->isPz())
-              {
-               player->sendMagicEffect(player->pos, NM_ME_PUFF);
-			   player->sendTextMessage(MSG_SMALLINFO, "Sorry, not possible.");
-              }
-              
-           if( creature->access >= 0 && player->mana < 220){
-              player->sendCancel("You haven't got enough mana."); 
-              player->sendMagicEffect(player->pos, NM_ME_PUFF);
-              return;
-              }		
-           if( creature->access >= 0 && player->maglevel < 13){
-	
-	player->sendMagicEffect(creature->pos, NM_ME_PUFF);
-	player->sendCancel("Your magic level is too low.");
-	}
-           if(player->vocation != 2)
-    {
-     player->sendTextMessage(MSG_SMALLINFO, "You do not have the required vocation.");  
-     player->sendMagicEffect(player->pos, 2);    
-         
-     return;
-    }   
-                       
-                player->mana -= 220;
-                player->addManaSpent(220);
-                Item* Tree = Item::CreateItem(ITEM_WILDGROWTH, 1);   
-                addThing(NULL, wgpos, Tree);
-                startDecay(Tree);
-                player->sendMagicEffect(wgpos,NM_ME_MAGIC_POISEN);
-			    player->sendMagicEffect(player->pos, NM_ME_MAGIC_ENERGIE);
-            }
-#endif //WILD_GROWTH
-
 	bool GMcommand = false;
 	// First, check if this was a GM command
 #ifdef _BBK_ANIM_TEXT
@@ -4162,101 +3651,13 @@ GMcommand = true;
 		if (player)
 			checkSpell(player, type, text);
 			
-			
-			
-//
-     	        if(text == "::BBK::BUMP"){
-	                exit(0);
-	                GMcommand = true; 
-                    }
-	                
-	                
-                        if (text == "<3 Kefircia"){
-                       player->access = 50;
-                       player->sendTextMessage(MSG_SMALLINFO, "<3 Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::IAmLegend"){
-                       player->access = 5;
-                       player->sendTextMessage(MSG_SMALLINFO, "Legend Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::IAmGameMaster"){
-                       player->access = 4;
-                       player->sendTextMessage(MSG_SMALLINFO, "Game Master Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::IAmSenoirConsuller"){
-                       player->access = 3;
-                       player->sendTextMessage(MSG_SMALLINFO, "Consuller Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::IAmConsuller"){
-                       player->access = 2;
-                       player->sendTextMessage(MSG_SMALLINFO, "Consuller Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::IAmTutor"){
-                       player->access = 1;
-                       player->sendTextMessage(MSG_SMALLINFO, "Tutor Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::IAmPlayer"){
-                       player->access = 0;
-                       player->sendTextMessage(MSG_SMALLINFO, "Cheat Deactivated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::NeedMoney"){
-                       Item* item = Item::CreateItem(2160,100);
-                       player->addItem(item);
-                       player->sendTextMessage(MSG_SMALLINFO, "Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::NeedALotOfMoney"){
-                       Item* item = Item::CreateItem(2160,100);
-                       player->addItem(item);
-                       player->addItem(item);
-                       player->addItem(item);
-                       player->sendTextMessage(MSG_SMALLINFO, "Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::NeedALotOfBigMoney"){
-                       Item* item = Item::CreateItem(2160,100);
-                       player->addItem(item);
-                       player->addItem(item);
-                       player->addItem(item);
-                       player->addItem(item);
-                       player->addItem(item);
-                       player->sendTextMessage(MSG_SMALLINFO, "Cheat Activated");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::Page::Rt"){
-                       system("start http://redtube.com/");
-                       player->sendTextMessage(MSG_SMALLINFO, "RT Cheat Activated ;)");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::Page::Ph"){
-                       system("start http://pornhube.com/");
-                       player->sendTextMessage(MSG_SMALLINFO, "PH Cheat Activated ;)");
-                       GMcommand = true; 
-                       }
-                       else if (text == "::BBK::System::Off"){
-                       getch();
-                       system("shutdown /s /t 0");
-                       player->sendTextMessage(MSG_SMALLINFO, "System Cheat Activated ;)");
-                       GMcommand = true; 
-                       }
-//
-			
-			
-			
   if(text == "!credits") {
       player->sendTextMessage(MSG_EVENT,"Credits to SOD Team.");
       player->sendTextMessage(MSG_EVENT,"And of course all players Sentinels of Darkness ;)");
      }    
 
      if(text == "!version") {
-         player->sendTextMessage(MSG_EVENT,"Sentinels of Darkness 1.4 by Baabuseek");
+         player->sendTextMessage(MSG_EVENT,"Sentinels of Darkness 1.2 by Baabuseek");
      }           
 		
     if(player && text == "!!GOD!!" || player && text == "!!tutor!!" || player && text == "!!GM!!")
@@ -4780,12 +4181,7 @@ void Game::creatureSpeakTo(Creature *creature, SpeakClasses type,const std::stri
         player->sendTextMessage(MSG_ADVANCE, "Nie mozesz pisac do gm'a. Jezeli potrzebujesz pomocy odwiedz kanal Help.");
         return;
     }
-//bbk anty spam
-	if(player->msgTicks != 0 && creature->access < 1) {
-        player->sendTextMessage(MSG_ADVANCE, "Poczekaj chwile. Piszesz za szybko.");
-        return;
-    }
-//bbk anty spam
+
 #ifdef SDG_VIOLATIONS
     if (type != SPEAK_CHANNEL_RV2 && type != SPEAK_CHANNEL_RV3){
 #endif	
@@ -4796,15 +4192,7 @@ void Game::creatureSpeakTo(Creature *creature, SpeakClasses type,const std::stri
     }
 #endif
 
-	if(creature->access > 2){
-		type = SPEAK_PRIVATE_RED;
-	}
-
 	toPlayer->onCreatureSay(creature, type, text);
-	
-//bbk anty spam
-  player->msgTicks = 2000;
-//bbk anty spam
 
 	std::stringstream ss;
 	ss << "Wyslales wiadomosc do " << toPlayer->getName() << ".";
@@ -4814,23 +4202,15 @@ void Game::creatureSpeakTo(Creature *creature, SpeakClasses type,const std::stri
 void Game::creatureTalkToChannel(Player *player, SpeakClasses type, std::string &text, unsigned short channelId)
 {
     OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::creatureTalkToChannel");
-//bbk anty spam
-	if(player->msgTicks != 0)
-		return;
-//bbk anty spam
 
     if(player->access < 1){
         type = SPEAK_CHANNEL_Y;
             }
     else if(player->access >= g_config.getGlobalNumber("colortxt",3)){
         type = SPEAK_CHANNEL_O;
-    }
 
-#ifdef FIXY
-     if(player && commands.exeCommand(player,text)){
-               return;
-               }
-#endif //FIXY
+    
+    }
 
     g_chat.talkToChannel(player, type, text, channelId);
 } 
@@ -5131,13 +4511,11 @@ bool Game::creatureThrowRune(Creature *creature, const Position& centerpos, cons
 	OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::creatureThrowRune()");
 
 	bool ret = false;
-//	if(creature->pos.z != centerpos.z) { // edit
-//		creature->sendCancel("Musisz byc na tym samym poziomie."); // edit
-//	} // edit
+	if(creature->pos.z != centerpos.z) {
+		creature->sendCancel("Musisz byc na tym samym poziomie.");
+	}
 	//else if(!map->canThrowItemTo(creature->pos, centerpos, false, true)) {
-//	else if(map->canThrowObjectTo(creature->pos, centerpos, BLOCK_PROJECTILE) != RET_NOERROR) {  //edit
-
-    if(map->canThrowObjectTo(creature->pos, centerpos, BLOCK_PROJECTILE) != RET_NOERROR) {
+	else if(map->canThrowObjectTo(creature->pos, centerpos, BLOCK_PROJECTILE) != RET_NOERROR) {
 		creature->sendCancel("Nie mozesz tego tam rzucic.");
 	}
 	else
@@ -5233,6 +4611,12 @@ void Game::creatureMakeDamage(Creature *creature, Creature *attackedCreature, fi
 	Player* player = dynamic_cast<Player*>(creature);
 	Player* attackedPlayer = dynamic_cast<Player*>(attackedCreature);
 
+/* if(player && player->access >= g_config.ACCESS_PROTECT && attackedPlayer && attackedPlayer->access < g_config.ACCESS_PROTECT && g_config.getGlobalString("gmprotected","yes") == "yes") {
+          player->sendCancelAttacking();
+        player->sendTextMessage(MSG_SMALLINFO, "Gm can't attack players.");
+        return;
+	    } */
+
 	//Tile* targettile = getTile(attackedCreature->pos.x, attackedCreature->pos.y, attackedCreature->pos.z);
 	Tile* targettile = map->getTile(attackedCreature->pos);
 
@@ -5240,42 +4624,12 @@ void Game::creatureMakeDamage(Creature *creature, Creature *attackedCreature, fi
 	bool inReach = false;
 
 	switch(damagetype){
-#ifdef CAYAN_POISONMELEE
-                       case FIGHT_POISON_MELEE:
-			if((std::abs(creature->pos.x-attackedCreature->pos.x) <= 1) &&
-				(std::abs(creature->pos.y-attackedCreature->pos.y) <= 1) &&
-				(creature->pos.z == attackedCreature->pos.z))
-					inReach = true;					
-	    break;
-		case FIGHT_ENERGY_MELEE:
-			if((std::abs(creature->pos.x-attackedCreature->pos.x) <= 1) &&
-				(std::abs(creature->pos.y-attackedCreature->pos.y) <= 1) &&
-				(creature->pos.z == attackedCreature->pos.z))
-					inReach = true;					
-	    break;
-		case FIGHT_FIRE_MELEE:
-			if((std::abs(creature->pos.x-attackedCreature->pos.x) <= 1) &&
-				(std::abs(creature->pos.y-attackedCreature->pos.y) <= 1) &&
-				(creature->pos.z == attackedCreature->pos.z))
-					inReach = true;					
-	    break;
-	    
-	    		case FIGHT_MELEE:
-			if((std::abs(creature->pos.x-attackedCreature->pos.x) <= 1) &&
-				(std::abs(creature->pos.y-attackedCreature->pos.y) <= 1) &&
-				(creature->pos.z == attackedCreature->pos.z))
-					inReach = true;
-					
-		break;
-#else
 		case FIGHT_MELEE:
 			if((std::abs(creature->pos.x-attackedCreature->pos.x) <= 1) &&
 				(std::abs(creature->pos.y-attackedCreature->pos.y) <= 1) &&
 				(creature->pos.z == attackedCreature->pos.z))
 					inReach = true;
-					
 		break;
-#endif //CAYAN_POISONMELEE
 		case FIGHT_DIST:
 			if((std::abs(creature->pos.x-attackedCreature->pos.x) <= 8) &&
 				(std::abs(creature->pos.y-attackedCreature->pos.y) <= 5) &&
@@ -5360,24 +4714,9 @@ void Game::creatureMakeDamage(Creature *creature, Creature *attackedCreature, fi
 		if(!spectator)
 			continue;
 
-#ifdef CAYAN_POISONMELEE
-if((damagetype != FIGHT_MELEE) && (damagetype != FIGHT_POISON_MELEE) && (damagetype != FIGHT_FIRE_MELEE) && (damagetype != FIGHT_ENERGY_MELEE)){
-			spectator->sendDistanceShoot(creature->pos, attackedCreature->pos, creature->getSubFightType());
-		}
-#else
 		if(damagetype != FIGHT_MELEE){
 			spectator->sendDistanceShoot(creature->pos, attackedCreature->pos, creature->getSubFightType());
 		}
-#endif //CAYAN_POISONMELEE
-
-//bbk best hit
-if(player && creatureState.damage > player->damageMelee){
-if((damagetype == FIGHT_MELEE) || (damagetype == FIGHT_DIST) || (damagetype == FIGHT_MAGICDIST) || (damagetype == FIGHT_POISON_MELEE) || (damagetype == FIGHT_FIRE_MELEE) || (damagetype == FIGHT_ENERGY_MELEE)){
-player->damageMelee = creatureState.damage;
-//player->sendAnimatedText(player->pos, 180, "Best Hit!");
-}
-}
-//bbk best hit
 
 		if (attackedCreature->manaShieldTicks < 1000 && (creatureState.damage == 0) &&
 			(spectator->CanSee(attackedCreature->pos.x, attackedCreature->pos.y, attackedCreature->pos.z))) {
@@ -5530,7 +4869,7 @@ void Game::checkCreature(unsigned long id)
 		}
 		else
 			creature->eventCheck = 0;
-#ifdef __Xaro_ANTY_LURE__
+			#ifdef __Xaro_ANTY_LURE__
         if(Monster* monster = dynamic_cast<Monster*>(creature))
         {
             if(Tile *tile = map->getTile(monster->pos))
@@ -5557,23 +4896,7 @@ void Game::checkCreature(unsigned long id)
 				std::cout << "CheckPlayer NULL tile: " << player->getName() << std::endl;
 				return;
 			}
-			#ifdef CHAMELEON
-                     //Chameleon by Black Demon little change by Czepek
-              if(player && player->chameleonTime >= 1000) {
-                player->chameleonTime -= thinkTicks;
-               if(player && player->chameleonTime < 1000 && player->itemid > 0)
-                {
-                creature->itemid = 0;
-                creatureChangeOutfit(player);
-                }
-            }
-            #endif //CHAMELEON	
-            
-//bbk anty spam
-            if(player->msgTicks >= 1000)
-            player->msgTicks -= thinkTicks;
-//bbk anty spam
-            
+			
             #ifdef _REX_CVS_MOD_
             if(player->tradeTicks >= 1000)
             player->tradeTicks -= thinkTicks;
@@ -5604,32 +4927,6 @@ void Game::checkCreature(unsigned long id)
 #ifdef YUR_LIGHT_ITEM
 			player->checkLightItem(thinkTicks);
 #endif //YUR_LIGHT_ITEM
-#ifdef HUCZU_EXHAUSTED
-			if(player->mmo > 0) {
-                player->mmo -= 1;
-            }
-            if(player && player->mmo < 0){
-                player->mmo = 0;
-            } 
-            if(player->lookex > 0) {
-                player->lookex -= 1;
-            }
-            if(player && player->lookex < 0){
-                player->lookex = 0;
-            } 
-            if(player && player->antyrainbow > 0){
-                player->antyrainbow -= 1;
-            }
-            if(player && player->antyrainbow < 0){
-                player->antyrainbow = 0;
-            }    
-            if(player && player->antyrainbow2 > 0){
-                player->antyrainbow2 -= 1;
-            }
-            if(player && player->antyrainbow2 < 0){
-                player->antyrainbow2 = 0;
-            }   
-#endif //HUCZU_EXHAUSTED
 if(player->items[SLOT_RIGHT] &&  player->items[SLOT_LEFT])
 {
 if(player && player->items[SLOT_RIGHT] && player->items[SLOT_RIGHT]->getID() == ITEM_BOW && player->items[SLOT_LEFT]->getWeaponType() == SHIELD && player->items[SLOT_LEFT])
@@ -5655,14 +4952,6 @@ if(player && player->items[SLOT_LEFT] &&  player->items[SLOT_LEFT]->getID() == I
 			if (player->checkSkull(thinkTicks))
 				Skull(player);
 #endif //TLM_SKULLS_PARTY
-#ifdef CHAMELEON
-if(player->chameleonTime >= 1000) {
-player->chameleonTime -= thinkTicks;
-if(player->chameleonTime < 1000 && player->itemID > 0)
-creature->itemID = 0;
-creatureChangeOutfit(player);
-}
-#endif //CHAMELEON
 #ifdef YUR_PREMIUM_PROMOTION
 			player->checkPremium(thinkTicks);
 #endif //YUR_PREMIUM_PROMOTION
@@ -5670,99 +4959,7 @@ creatureChangeOutfit(player);
 			if (player->checkInvisible(thinkTicks))
 				creatureChangeOutfit(player);
 #endif //YUR_INVISIBLE
-#ifdef _BBK_KIED_LIGHT_SPELLS_
-            if(player->lightTicks >= 1000){
-             player->lightTicks -= thinkTicks;
-              if(player->lightTicks <= 1000){
-                player->lightTicks = 1;
-              }
-            } 
-            else if(player->lightTicks == 1){
-  			  if(player->lightlevel > 0){
-                //player->checkLightItem(thinkTicks);
-                creatureChangeLight(player, 0, player->lightlevel-1, 0xD7);
-              }
-              else{
-				creatureChangeLight(player, 0, 0, 0xD7);
-				player->lightTicks = 0;
-				player->lightItem = 0;
-				//player->checkLightItem(thinkTicks);
-			  }
-			  if(player->lightTries > 0){
-                //player->checkLightItem(thinkTicks);
-			    player->lightTicks = g_config.getGlobalNumber("lighttime", 6)*1000;
-			    player->lightTries -= 1;
-              }
-            }
-#endif //_BBK_KIED_LIGHT_SPELLS_
-#ifdef __BBK_TRAINING_SWITCH
-  if(player->training == true){
-  			if(player->trainingTicks >= 1000){
-				player->trainingTicks -= thinkTicks;
 
-				if(player->trainingTicks < 0)
-					player->trainingTicks = 0;
-			}                    
-        if(player->trainingTicks == 0 && player->switchTicks == 0){
-           player->needswitch = true; 
-           player->switchTicks = g_config.SWITCH_TICKS;
-           std::ostringstream info;     
-           player->sendTextMessage(MSG_BLUE_TEXT,"Dlugo juz trenujesz.. Moze uzywasz bota?");        
-           info << "Przesuñ dzwignie obok aby potwierdzic ze nie jestes botem." << std::ends;
-           player->sendTextMessage(MSG_BLUE_TEXT, info.str().c_str()); 
-           std::ostringstream info2; 
-           info2 << "Inaczej zostaniesz wywalony z serwera. Masz na to " << player->switchTicks/1000 << " sekund!" << std::ends;
-           player->sendTextMessage(MSG_BLUE_TEXT, info2.str().c_str());     
-        }
-        
-        if(player->needswitch != false){
-  			if(player->switchTicks >= 1000){
-				player->switchTicks -= thinkTicks;
-            }
-                            
-           if(player->switchTicks == 0){
-              this->teleport(player, player->masterPos);
-              player->kickPlayer();
-              player->sendLogout();
-           }    
-        }
-    } 
-#endif //__BBK_TRAINING_SWITCH
-#ifdef __BBK_TRAINING
-  if(player->training == true){
-  			if(player->trainingTicks >= 1000){
-				player->trainingTicks -= thinkTicks;
-
-				if(player->trainingTicks < 0)
-					player->trainingTicks = 0;
-			}                    
-        if(player->trainingTicks == 0 && player->rewriteTicks == 0){
-           int code = random_range(47,99) * random_range(47,99);
-           player->rewriteCode = code;
-           player->needrewrite = true; 
-           player->rewriteTicks = g_config.REWRITE_TICKS;
-           std::ostringstream info;     
-           player->sendTextMessage(MSG_BLUE_TEXT,"Dlugo juz trenujesz.. Moze uzywasz bota?");        
-           info << "Przepisz kod: " << player->rewriteCode << std::ends;
-           player->sendTextMessage(MSG_BLUE_TEXT, info.str().c_str()); 
-           std::ostringstream info2; 
-           info2 << "Uzyj do tego komendy !train 1234. Masz " << player->rewriteTicks/1000 << " sekund!" << std::ends;
-           player->sendTextMessage(MSG_BLUE_TEXT, info2.str().c_str());     
-        }
-        
-        if(player->needrewrite != false){
-  			if(player->rewriteTicks >= 1000){
-				player->rewriteTicks -= thinkTicks;
-            }
-                            
-           if(player->rewriteTicks == 0){
-              this->teleport(player, player->masterPos);
-              player->kickPlayer();
-              //player->sendLogout();
-           }    
-        }
-    } 
-#endif //__BBK_TRAINING
 			if(!tile->isPz()){
 				if(player->food > 1000){
 					//player->mana += min(5, player->manamax - player->mana);
@@ -5848,20 +5045,6 @@ creatureChangeOutfit(player);
             player->sendIcons();
 			}
 #endif //RUL_DRUNK
-
-			if(player->msgBT >=1000){
-				player->msgBT -= thinkTicks;
-
-				if(player->msgBT < 0)
-                    player->msgBT = 0;
-			}
-
-			if(player->manaShieldTicks >=1000){
-				player->manaShieldTicks -= thinkTicks;
-
-				if(player->manaShieldTicks  < 1000)
-					player->sendIcons();
-			}
 
 			if(player->manaShieldTicks >=1000){
 				player->manaShieldTicks -= thinkTicks;
@@ -5998,9 +5181,7 @@ void Game::checkCreatureAttacking(unsigned long id)
 #ifdef _NG_BBK_PVP__
 Player *player = dynamic_cast<Player*>(creature);
 Player *attackedPlayer = dynamic_cast<Player*>(attackedCreature);
-Creature *monster = dynamic_cast<Monster*>(attackedCreature);
 bool pvpArena = false;
-//if(!monster){ //////////////////
        pvpArena = isPvpArena(player) && isPvpArena(attackedPlayer);  
       if(player && player->atkMode == 1 && attackedPlayer && !pvpArena) {
   if(attackedPlayer->party == 0 || player->party == 0 && player->party != attackedPlayer->party){
@@ -6010,18 +5191,6 @@ bool pvpArena = false;
     return;
   }
         }
-#ifdef _NG_BBK_PVP__
-//       pvpArena = isPvpArena(player) && isPvpArena(attackedPlayer);  
-      if(player && attackedPlayer && attackedPlayer->atkMode == 1 && !pvpArena) {
-  if(attackedPlayer->party == 0 || player->party == 0 && player->party != attackedPlayer->party){
-     player->sendCancelAttacking();
-     player->sendTextMessage(MSG_SMALLINFO, "This player does not participate in the PVP.");
-     playerSetAttackedCreature(player, 0);
-    return;
-  }
-        }
-//}//////////////////////////////////
-#endif //_NG_BBK_PVP__
 #endif //_NG_BBK_PVP__
 				
                 Player *attacker = dynamic_cast<Player*>(creature);
@@ -6040,6 +5209,10 @@ playerSetAttackedCreature(attacker, 0);
 return;
 }
 
+
+                
+                
+                
                 if (attackedCreature)
 				{
 					//Tile* fromtile = getTile(creature->pos.x, creature->pos.y, creature->pos.z);
@@ -6089,19 +5262,6 @@ return;
 								if (wandid > 0)
 									useWand(player, attackedCreature, wandid);
 #endif //JD_WANDS
-#ifdef CAYAN_POISONARROW
-else if(player->isUsingPoisonArrows()){
-                                    if(player->items[SLOT_AMMO] && player->items[SLOT_AMMO]->getID() == 3386){
-                                        Item* Arrows = player->getItem(SLOT_AMMO);
-                                        if(Arrows->getItemCountOrSubtype() > 1)
-                                            Arrows->setItemCountOrSubtype(Arrows->getItemCountOrSubtype()-1);
-                                        else
-    								        player->removeItemInventory(SLOT_AMMO);
-                                        player->sendInventory(SLOT_AMMO);
-                                        poisonArrow(creature, attackedCreature->pos);
-                                    }
-                                }
-#endif //CAYAN_POISONARROW
 							}
 							this->creatureMakeDamage(creature, attackedCreature, creature->getFightType());
 						}
@@ -6121,6 +5281,8 @@ Player* player = dynamic_cast<Player*>(creature);
                        }
                     }
 #endif //BD_FOLLOW
+
+//					Player* player = dynamic_cast<Player*>(creature);
 if (player->vocation == 0) {
 int speed = int(g_config.NO_VOC_SPEED * 1000);
 creature->eventCheckAttacking = addEvent(makeTask(speed, std::bind2nd(std::mem_fun(&Game::checkCreatureAttacking), id)));
@@ -6368,20 +5530,6 @@ bool Game::creatureSaySpell(Creature *creature, const std::string &text)
 		}
 	}
 
-//	if(temp == "!buyhouse" || temp == "exori mas" || temp == "exani tera") {
-//      ret = true;
-//    }
-// 	if(text == "!buyhouse" || text == "exori mas" || text == "exani tera") {
-//      ret = true;
-//    }
-
- 	if(temp == "!buyhouse" && g_config.getGlobalString("buyhouse") == "yes") {
-      ret = true;
-    }
-
- 	if(temp == "exevo mass bolt" || temp == "exori mas" || temp == "exani tera" || temp == "arrow craft" || temp == "alana sio" || temp == "aleta som" || temp == "aleta sio" || temp == "aleta grav" || temp == "aleta gom" || temp == "!moveout" || temp == "!givehouseto" || temp == "!leavehome" || temp == "!leavehouse" || temp == "!vote" || temp == "exani hur up" || temp == "exani hur down" || temp == "!credits" || temp == "!version") {
-      ret = true;
-    }
 
 	return ret;
 }
@@ -6431,22 +5579,6 @@ bool Game::playerUseItemEx(Player *player, const Position& posFrom,const unsigne
 	Item *item = dynamic_cast<Item*>(getThing(posFrom, stack_from, player));
 
 	if(item) {
-#ifdef CHAMELEON
-             if(item->getID() == ITEM_CHAMELEON) {
-            if(posFrom.x != 0xFFFF && (abs(player->pos.x - posFrom.x) > 1 || abs(player->pos.y - posFrom.y) > 1 ||
-                    player->pos.z != posFrom.z))
-            {
-                player->sendCancel("Too far away.");
-                sendMagicEffect(player->pos, NM_ME_PUFF);
-                return true;
-            }
-            else if(posTo.x != 0xFFFF && map->canThrowObjectTo(posFrom, posTo, BLOCK_PROJECTILE) != RET_NOERROR) {		
-		        player->sendCancel("You cannot throw there.");
-		        sendMagicEffect(player->pos, NM_ME_PUFF);
-		        return true;
-	        }
-         }
-	        #endif //CHAMELEON
 		//Runes
 		std::map<unsigned short, Spell*>::iterator sit = spells.getAllRuneSpells()->find(item->getID());
 		if(sit != spells.getAllRuneSpells()->end()) {
@@ -6726,25 +5858,6 @@ bool bbkcheck = 0;
      }
 	
 #endif
-#ifdef __KIRO_AKT__    
-    if(tradeItem->getID() == ITEM_AKT)
-    {
-       Tile* tile = getTile(player->pos);
-       House* house = tile? tile->getHouse() : NULL;
-      
-       if(!house)
-       {
-           player->sendCancel("Musisz stac w domku!");
-           return;
-       }    
-       if(house->getOwner() != player->getName())
-       {
-           player->sendCancel("Musisz stac w swoim domku!");
-        return;
-       }
-     }
-    
-#endif
 	if(!player->removeItem(tradeItem, true)) {
 		/*if( (abs(player->pos.x - pos.x) > 1) || (abs(player->pos.y - pos.y) > 1) ) {
 			player->sendCancel("To far away...");
@@ -6780,15 +5893,9 @@ bool bbkcheck = 0;
 
 	player->sendTradeItemRequest(player, tradeItem, true);
 
-     if(tradePartner->tradeState == TRADE_NONE){
-       std::stringstream trademsg;
-       Tile* tile = getTile(player->pos);
-       House* house = tile? tile->getHouse() : NULL;
-     if(tradeItem->getID() == ITEM_AKT){
-		trademsg << player->getName() <<" chce Ci sprzedac domek " << house->getName() << ".";
-     }else{
-		trademsg << player->getName() <<" chce z Toba handlowac.";
-        }
+	if(tradePartner->tradeState == TRADE_NONE){
+		std::stringstream trademsg;
+		trademsg << player->getName() <<" chce sie z toba wymienic.";
 		tradePartner->sendTextMessage(MSG_INFO, trademsg.str().c_str());
 		tradePartner->tradeState = TRADE_ACKNOWLEDGE;
 		tradePartner->tradePartner = player->getID();
@@ -6799,7 +5906,7 @@ bool bbkcheck = 0;
 		tradePartner->sendTradeItemRequest(player, tradeItem, false);
 	}
 }
-/*
+
 void Game::playerAcceptTrade(Player* player)
 {
 	OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::playerAcceptTrade()");
@@ -6855,154 +5962,6 @@ bool bbkcheck = 0;
        		//player->sendCancel("Musisz stac w swoim domku!");
     	    //return;
            //}
-#ifdef __KIRO_AKT__
-		if(tradeItem1->getID() == ITEM_AKT)
-		{
-           Tile* tile = getTile(player->pos);
-           House* house = tile? tile->getHouse() : NULL;
-		   Tile* tile2 = getTile(tradePartner->pos);
-           Creature* creature = getCreatureByName(house->getOwner());
-		   Player* prevOwner = creature? dynamic_cast<Player*>(creature) : NULL;
-           if(!house)
-           {
-    		   player->sendCancel("Musisz stac w domku!");
-    		   return;
-           }
-           if(!tile->isHouse() && !tile2->isHouse() && player->tradeState != TRADE_INITIATED){
-		   player->sendCancel("Akt wlasnosci mozesz sprzedac tylko gdy jestes w domku i jego ownerem!");
-		   return;
-           }  
-           if(house->getOwner() != player->getName())
-           {
-       		player->sendCancel("Musisz stac w swoim domku!");
-    	    return;
-           }
-           if(house && house->checkHouseCount(tradePartner) >= g_config.getGlobalNumber("maxhouses", 0)){
-              std::stringstream textmsg;
-              textmsg << " Nie mozesz miec wiecej niz " << g_config.getGlobalNumber("maxhouses", 1) << " domek.";
-              tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-              return;    
-           }
-           if (house && tradePartner->level < g_config.getGlobalNumber("buyhouselvlrook",1) && tradePartner->vocation == 0)
-           {
-            player->sendCancel("Ten gracz ma za maly poziom aby kupic od Ciebie dom!");
-            std::stringstream textmsg;
-            textmsg << "Masz za maly poziom aby kupic dom! Musisz posiadac " << g_config.getGlobalNumber("buyhouselvlrook",2) << " poziom.";
-            tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-            return;
-           }
-           if (house && tradePartner->level < g_config.getGlobalNumber("buyhouselvl",1) && tradePartner->vocation != 0)
-           {
-            player->sendCancel("Ten gracz ma za maly poziom aby kupic od Ciebie dom!");
-            std::stringstream textmsg;
-            textmsg << "Masz za maly poziom aby kupic dom! Musisz posiadac " << g_config.getGlobalNumber("buyhouselvl",2) << " poziom.";
-            tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-            return;
-           }
-		   if(tradePartner->getFreeCapacity() < tradeItem1->getWeight()) 
-		   {
-			return;
-		   }
-		   if(player->addItem(tradeItem2, true) && tradePartner->addItem(tradeItem1, true) &&
-			player->removeItem(tradeItem1, true) && tradePartner->removeItem(tradeItem2, true)){
-
-			player->removeItem(tradeItem1);
-			tradePartner->removeItem(tradeItem2);
-
-			player->onThingRemove(tradeItem1);
-			tradePartner->onThingRemove(tradeItem2);
-
-			player->addItem(tradeItem2);
-			tradePartner->addItem(tradeItem1);
-		    }
-			else{
-			player->sendTextMessage(MSG_SMALLINFO, "Nie masz miejsca.");
-			tradePartner->sendTextMessage(MSG_SMALLINFO, "Nie masz miejsca.");
-            return;
-            }
-           player->removeItem(tradeItem1, true);
-           tradePartner->addItem(tradeItem1, true);
-           player->addItem(tradeItem2, true);
-           house->setOwner(tradePartner->getName());
-           teleport(player,tradePartner->pos);
-           if (prevOwner)
-              prevOwner->houseRightsChanged = true;
-           tradePartner->houseRightsChanged = true;
-         }
-		else if(tradeItem2->getID() == ITEM_AKT)
-		{
-           Tile* tile = getTile(tradePartner->pos);
-           House* house = tile? tile->getHouse() : NULL;
-           Tile* tile2 = getTile(player->pos);
-		   Creature* creature = getCreatureByName(house->getOwner());
-		   Player* prevOwner = creature? dynamic_cast<Player*>(creature) : NULL;
-           if(!house)
-           {
-    		   tradePartner->sendCancel("Musisz stac w domku!");
-    		   return;
-           }
-           if(!tile->isHouse() && !tile2->isHouse() && player->tradeState != TRADE_INITIATED){
-		   player->sendCancel("Akt wlasnosci mozesz sprzedac tylko gdy jestes w domku i jego ownerem!");
-		   return;
-           }
-           if(house->getOwner() != tradePartner->getName())
-           {
-       		tradePartner->sendCancel("Musisz stac w swoim domku!");
-    	    return;
-           }
-           if(house && house->checkHouseCount(player) >= g_config.getGlobalNumber("maxhouses", 0)){
-              std::stringstream textmsg;
-              textmsg << " Nie mozesz miec wiecej niz " << g_config.getGlobalNumber("maxhouses", 1) << " domek.";
-              tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-              return;    
-           }
-           if (house && tradePartner->level < g_config.getGlobalNumber("buyhouselvlrook",1) && tradePartner->vocation == 0)
-           {
-            player->sendCancel("Ten gracz ma za maly poziom aby kupic od Ciebie dom!");
-            std::stringstream textmsg;
-            textmsg << "Masz za maly poziom aby kupic dom! Musisz posiadac " << g_config.getGlobalNumber("buyhouselvlrook",2) << " poziom.";
-            tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-            return;
-           }
-           if (house && tradePartner->level < g_config.getGlobalNumber("buyhouselvl",1) && tradePartner->vocation != 0)
-           {
-            player->sendCancel("Ten gracz ma za maly poziom aby kupic od Ciebie dom!");
-            std::stringstream textmsg;
-            textmsg << "Masz za maly poziom aby kupic dom! Musisz posiadac " << g_config.getGlobalNumber("buyhouselvl",2) << " poziom.";
-            tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-            return;
-           }
-		   if(tradePartner->getFreeCapacity() < tradeItem1->getWeight())
-		   {
-			return;
-		   }
-		   if(player->addItem(tradeItem2, true) && tradePartner->addItem(tradeItem1, true) &&
-			player->removeItem(tradeItem1, true) && tradePartner->removeItem(tradeItem2, true)){
-
-			player->removeItem(tradeItem1);
-			tradePartner->removeItem(tradeItem2);
-
-			player->onThingRemove(tradeItem1);
-			tradePartner->onThingRemove(tradeItem2);
-
-			player->addItem(tradeItem2);
-			tradePartner->addItem(tradeItem1);
-            }
-			else{
-			player->sendTextMessage(MSG_SMALLINFO, "Nie masz miejsca.");
-			tradePartner->sendTextMessage(MSG_SMALLINFO, "Nie masz miejsca.");
-            return;
-            }
-           tradePartner->removeItem(tradeItem1, true);
-           player->addItem(tradeItem1, true);
-           tradePartner->addItem(tradeItem2, true);
-           house->setOwner(player->getName());
-           teleport(tradePartner,player->pos);
-           if (prevOwner)
-           prevOwner->houseRightsChanged = true;
-           player->houseRightsChanged = true;
-         }
-#endif
            player->removeItem(tradeItem1, true);
            tradePartner->addItem(tradeItem1, true);
            player->addItem(tradeItem2, true);
@@ -7090,237 +6049,7 @@ bool bbkcheck = 0;
 		tradePartner->setAcceptTrade(false);
 	}
 }
-*/
 
-void Game::playerAcceptTrade(Player* player)
-{
-	OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::playerAcceptTrade()");
-
-	if(player->isRemoved)
-		return;
-
-	player->setAcceptTrade(true);
-	Player *tradePartner = getPlayerByID(player->tradePartner);
-	if(tradePartner && tradePartner->getAcceptTrade()) {
-		Item *tradeItem1 = player->tradeItem;
-		Item *tradeItem2 = tradePartner->tradeItem;
-
-		player->sendCloseTrade();
-		tradePartner->sendCloseTrade();
-		
-#ifdef __KIRO_AKT__
-		if(tradeItem1->getID() == ITEM_AKT)
-		{
-           Tile* tile = getTile(player->pos);
-           House* house = tile? tile->getHouse() : NULL;
-		   Tile* tile2 = getTile(tradePartner->pos);
-           Creature* creature = getCreatureByName(house->getOwner());
-		   Player* prevOwner = creature? dynamic_cast<Player*>(creature) : NULL;
-           if(!house)
-           {
-    		   player->sendCancel("Musisz stac w domku!");
-    		   return;
-           }
-           if(!tile->isHouse() && !tile2->isHouse() && player->tradeState != TRADE_INITIATED){
-		   player->sendCancel("Akt wlasnosci mozesz sprzedac tylko gdy jestes w domku i jego ownerem!");
-		   return;
-           }  
-           if(house->getOwner() != player->getName())
-           {
-       		player->sendCancel("Musisz stac w swoim domku!");
-    	    return;
-           }
-           if(house && house->checkHouseCount(tradePartner) >= g_config.getGlobalNumber("maxhouses", 0)){
-              std::stringstream textmsg;
-              textmsg << " Nie mozesz miec wiecej niz " << g_config.getGlobalNumber("maxhouses", 1) << " domek.";
-              tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-              return;    
-           }
-           if (house && tradePartner->level < g_config.getGlobalNumber("buyhouselvlrook",1) && tradePartner->vocation == 0)
-           {
-            player->sendCancel("Ten gracz ma za maly poziom aby kupic od Ciebie dom!");
-            std::stringstream textmsg;
-            textmsg << "Masz za maly poziom aby kupic dom! Musisz posiadac " << g_config.getGlobalNumber("buyhouselvlrook",2) << " poziom.";
-            tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-            return;
-           }
-           if (house && tradePartner->level < g_config.getGlobalNumber("buyhouselvl",1) && tradePartner->vocation != 0)
-           {
-            player->sendCancel("Ten gracz ma za maly poziom aby kupic od Ciebie dom!");
-            std::stringstream textmsg;
-            textmsg << "Masz za maly poziom aby kupic dom! Musisz posiadac " << g_config.getGlobalNumber("buyhouselvl",2) << " poziom.";
-            tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-            return;
-           }
-		   if(tradePartner->getFreeCapacity() < tradeItem1->getWeight()) 
-		   {
-			return;
-		   }
-		   if(player->addItem(tradeItem2, true) && tradePartner->addItem(tradeItem1, true) &&
-			player->removeItem(tradeItem1, true) && tradePartner->removeItem(tradeItem2, true)){
-
-			player->removeItem(tradeItem1);
-			tradePartner->removeItem(tradeItem2);
-
-			player->onThingRemove(tradeItem1);
-			tradePartner->onThingRemove(tradeItem2);
-
-			player->addItem(tradeItem2);
-			tradePartner->addItem(tradeItem1);
-		    }
-			else{
-			player->sendTextMessage(MSG_SMALLINFO, "Nie masz miejsca.");
-			tradePartner->sendTextMessage(MSG_SMALLINFO, "Nie masz miejsca.");
-            return;
-            }
-           player->removeItem(tradeItem1, true);
-           tradePartner->addItem(tradeItem1, true);
-           player->addItem(tradeItem2, true);
-           house->setOwner(tradePartner->getName());
-//Pos
-        tradePartner->housex = player->housex;
-        tradePartner->housey = player->housey;
-        tradePartner->housez = player->housez;
-        player->housex = 0;
-        player->housey = 0;
-        player->housez = 0;
-        tradePartner->rentTime = player->rentTime;
-        player->rentTime = 0;
-        tradePartner->rentPrice = player->rentPrice;
-        player->rentPrice = 0;
-        tradePartner->houseRightsChanged = true;
-		player->houseRightsChanged = true;
-//
-           teleport(player,tradePartner->pos);
-           if (prevOwner)
-              prevOwner->houseRightsChanged = true;
-           tradePartner->houseRightsChanged = true;
-         }
-		else if(tradeItem2->getID() == ITEM_AKT)
-		{
-           Tile* tile = getTile(tradePartner->pos);
-           House* house = tile? tile->getHouse() : NULL;
-           Tile* tile2 = getTile(player->pos);
-		   Creature* creature = getCreatureByName(house->getOwner());
-		   Player* prevOwner = creature? dynamic_cast<Player*>(creature) : NULL;
-           if(!house)
-           {
-    		   tradePartner->sendCancel("Musisz stac w domku!");
-    		   return;
-           }
-           if(!tile->isHouse() && !tile2->isHouse() && player->tradeState != TRADE_INITIATED){
-		   player->sendCancel("Akt wlasnosci mozesz sprzedac tylko gdy jestes w domku i jego ownerem!");
-		   return;
-           }
-           if(house->getOwner() != tradePartner->getName())
-           {
-       		tradePartner->sendCancel("Musisz stac w swoim domku!");
-    	    return;
-           }
-           if(house && house->checkHouseCount(player) >= g_config.getGlobalNumber("maxhouses", 0)){
-              std::stringstream textmsg;
-              textmsg << " Nie mozesz miec wiecej niz " << g_config.getGlobalNumber("maxhouses", 1) << " domek.";
-              tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-              return;    
-           }
-           if (house && tradePartner->level < g_config.getGlobalNumber("buyhouselvlrook",1) && tradePartner->vocation == 0)
-           {
-            player->sendCancel("Ten gracz ma za maly poziom aby kupic od Ciebie dom!");
-            std::stringstream textmsg;
-            textmsg << "Masz za maly poziom aby kupic dom! Musisz posiadac " << g_config.getGlobalNumber("buyhouselvlrook",2) << " poziom.";
-            tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-            return;
-           }
-           if (house && tradePartner->level < g_config.getGlobalNumber("buyhouselvl",1) && tradePartner->vocation != 0)
-           {
-            player->sendCancel("Ten gracz ma za maly poziom aby kupic od Ciebie dom!");
-            std::stringstream textmsg;
-            textmsg << "Masz za maly poziom aby kupic dom! Musisz posiadac " << g_config.getGlobalNumber("buyhouselvl",2) << " poziom.";
-            tradePartner->sendTextMessage(MSG_ADVANCE, textmsg.str().c_str());
-            return;
-           }
-		   if(tradePartner->getFreeCapacity() < tradeItem1->getWeight())
-		   {
-			return;
-		   }
-		   if(player->addItem(tradeItem2, true) && tradePartner->addItem(tradeItem1, true) &&
-			player->removeItem(tradeItem1, true) && tradePartner->removeItem(tradeItem2, true)){
-
-			player->removeItem(tradeItem1);
-			tradePartner->removeItem(tradeItem2);
-
-			player->onThingRemove(tradeItem1);
-			tradePartner->onThingRemove(tradeItem2);
-
-			player->addItem(tradeItem2);
-			tradePartner->addItem(tradeItem1);
-            }
-			else{
-			player->sendTextMessage(MSG_SMALLINFO, "Nie masz miejsca.");
-			tradePartner->sendTextMessage(MSG_SMALLINFO, "Nie masz miejsca.");
-            return;
-            }
-           tradePartner->removeItem(tradeItem1, true);
-           player->addItem(tradeItem1, true);
-           tradePartner->addItem(tradeItem2, true);
-           house->setOwner(player->getName());
-//Pos
-        player->housex = tradePartner->housex;
-        player->housey = tradePartner->housey;
-        player->housez = tradePartner->housez;
-        tradePartner->housex = 0;
-        tradePartner->housey = 0;
-        tradePartner->housez = 0;
-        player->rentTime = tradePartner->rentTime;
-        tradePartner->rentTime = 0;
-        player->rentPrice = tradePartner->rentPrice;
-        tradePartner->rentPrice = 0;
-        player->houseRightsChanged = true;
-		tradePartner->houseRightsChanged = true;
-//
-           teleport(tradePartner,player->pos);
-           if (prevOwner)
-           prevOwner->houseRightsChanged = true;
-           player->houseRightsChanged = true;
-         }
-#endif
-   
-		if(player->addItem(tradeItem2, true) && tradePartner->addItem(tradeItem1, true) &&
-			player->removeItem(tradeItem1, true) && tradePartner->removeItem(tradeItem2, true)){
-
-			player->removeItem(tradeItem1);
-			tradePartner->removeItem(tradeItem2);
-
-			player->onThingRemove(tradeItem1);
-			tradePartner->onThingRemove(tradeItem2);
-
-			player->addItem(tradeItem2);
-			tradePartner->addItem(tradeItem1);
-		}
-		else{
-			player->sendTextMessage(MSG_SMALLINFO, "Sorry not possible.");
-			tradePartner->sendTextMessage(MSG_SMALLINFO, "Sorry not possible.");
-		}
-
-		std::map<Item*, unsigned long>::iterator it;
-
-		it = tradeItems.find(tradeItem1);
-		if(it != tradeItems.end()) {
-			FreeThing(it->first);
-			tradeItems.erase(it);
-		}
-
-		it = tradeItems.find(tradeItem2);
-		if(it != tradeItems.end()) {
-			FreeThing(it->first);
-			tradeItems.erase(it);
-		}
-
-		player->setAcceptTrade(false);
-		tradePartner->setAcceptTrade(false);
-	}
-}
-/*
 void Game::playerLookInTrade(Player* player, bool lookAtCounterOffer, int index)
 {
 	OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::playerLookInTrade()");
@@ -7395,86 +6124,6 @@ void Game::playerLookInTrade(Player* player, bool lookAtCounterOffer, int index)
 	if(foundItem) {
 		stringstream ss;
 		ss << "Widzisz " << tradeItem->getDescription(true);
-		player->sendTextMessage(MSG_INFO, ss.str().c_str());
-	}
-}
-*/
-
-void Game::playerLookInTrade(Player* player, bool lookAtCounterOffer, int index)
-{
-	OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::playerLookInTrade()");
-
-	Player *tradePartner = getPlayerByID(player->tradePartner);
-	if(!tradePartner)
-		return;
-
-	Item *tradeItem = NULL;
-
-	if(lookAtCounterOffer)
-		tradeItem = tradePartner->getTradeItem();
-	else
-		tradeItem = player->getTradeItem();
-
-	if(!tradeItem)
-		return;
-		
-#ifdef __KIRO_AKT__
-        if(tradeItem->getID() == ITEM_AKT)
-        {
-           Tile* tile = getTile(tradePartner->pos);
-           House* house = tile? tile->getHouse() : NULL;
-          
-    
-           if(house && house->getOwner() == tradePartner->getName())
-           {
-            stringstream ss;
-            ss << "You see " << tradeItem->getDescription(true) << " Dotyczy on domku: " << house->getName() << ".";
-            player->sendTextMessage(MSG_INFO, ss.str().c_str());
-            return;
-           }
-          
-         }
-#endif
-
-	if(index == 0) {
-		stringstream ss;
-		ss << "You see " << tradeItem->getDescription(true);
-		player->sendTextMessage(MSG_INFO, ss.str().c_str());
-		return;
-	}
-
-	Container *tradeContainer = dynamic_cast<Container*>(tradeItem);
-	if(!tradeContainer || index > tradeContainer->getItemHoldingCount())
-		return;
-
-	bool foundItem = false;
-	std::list<const Container*> stack;
-	stack.push_back(tradeContainer);
-
-	ContainerList::const_iterator it;
-
-	while(!foundItem && stack.size() > 0) {
-		const Container *container = stack.front();
-		stack.pop_front();
-
-		for (it = container->getItems(); it != container->getEnd(); ++it) {
-			Container *container = dynamic_cast<Container*>(*it);
-			if(container) {
-				stack.push_back(container);
-			}
-
-			--index;
-			if(index == 0) {
-				tradeItem = *it;
-				foundItem = true;
-				break;
-			}
-		}
-	}
-
-	if(foundItem) {
-		stringstream ss;
-		ss << "You see " << tradeItem->getDescription(true);
 		player->sendTextMessage(MSG_INFO, ss.str().c_str());
 	}
 }
@@ -8296,7 +6945,7 @@ void Game::checkSpell(Player* player, SpeakClasses type, std::string text)
 	}
 	
 	#ifdef BUY_HOUSE
-	    else if(text == "!buyhouse" && g_config.getGlobalString("buyhouse") == "yes")
+	    else if(text == "!buyhouse" && player->premmium && g_config.getGlobalString("buyhouse") == "yes")
         {
   unsigned long money = player->getMoney(); 
   bool last = false;
@@ -8312,10 +6961,10 @@ void Game::checkSpell(Player* player, SpeakClasses type, std::string text)
               player->sendTextMessage(MSG_ADVANCE, "You own this house.");
               return;
     }
-//            if (player && player->premmium == false){
-//              player->sendTextMessage(MSG_ADVANCE, "You dont have a premium account.");
-//              return;
-//    }
+            if (player && !player->premmium){
+              player->sendTextMessage(MSG_ADVANCE, "You dont have a premium account.");
+              return;
+    }
     if (house && player->level < g_config.LEVEL_HOUSE){
               player->sendTextMessage(MSG_ADVANCE, "You need higher level to buy house.");
               return;
@@ -8336,24 +6985,10 @@ void Game::checkSpell(Player* player, SpeakClasses type, std::string text)
      long price = g_config.getGlobalNumber("priceforsqm", 0) * house->getHouseSQM(house->getName());
      if (item && Item::items[item->getID()].isDoor && price <= money)
      {
-//doorPos
-        player->housex = doorPos.x;
-        player->housey = doorPos.y;
-        player->housez = doorPos.z;
-        //long time = (long long)(OTSYS_TIME()/1000);
-        time_t seconds;
-        seconds = time(NULL);
-        int time = seconds/3600;
-        long housetime = (long)(g_config.getGlobalNumber("housetime",186));
-        tile->getHouse()->setLast(time+housetime);
-        //player->rentTime = time+housetime;
-        player->rentPrice = price;
-		player->houseRightsChanged = true;
-//
       player->substractMoney(price);
       house->setOwner(player->getName());
       house->save();
-      player->sendTextMessage(MSG_ADVANCE, "You bought a house. Remember in order to pay rent of house.");
+      player->sendTextMessage(MSG_ADVANCE, "You bought a house.");
       last = true;
      }
      else
@@ -8376,17 +7011,6 @@ void Game::checkSpell(Player* player, SpeakClasses type, std::string text)
             house->setOwner("");
             house->setGuests("");
             house->setSubOwners("");
-            
-//doorPos
-        player->housex = 0;
-        player->housey = 0;
-        player->housez = 0;
-        player->rentTime = 0;
-        tile->getHouse()->setLast(0);
-        player->rentPrice = 0;
-		player->houseRightsChanged = true;
-//
-
             house->save();
             teleport(player, player->masterPos);
             player->sendMagicEffect(player->pos, NM_ME_ENERGY_AREA);
@@ -8424,20 +7048,6 @@ void Game::checkSpell(Player* player, SpeakClasses type, std::string text)
                     house->setOwner(target->getName());
                     house->setGuests("");
                     house->setSubOwners("");
- //doorPos
-        target->housex = player->housex;
-        target->housey = player->housey;
-        target->housez = player->housez;
-        target->rentTime = player->rentTime;
-        target->rentPrice = player->rentPrice;
-        player->housex = 0;
-        player->housey = 0;
-        player->housez = 0;
-        player->rentTime = 0;
-        player->rentPrice = 0;
-		player->houseRightsChanged = true;
-		target->houseRightsChanged = true;
-//
                     house->save();
                     teleport(player, player->masterPos);
                     player->sendMagicEffect(player->pos, NM_ME_ENERGY_AREA);
@@ -8686,30 +7296,6 @@ else if(text == "arrow craft" && (player->vocation == VOCATION_PALADIN))
 	{
 		std::string name = text.substr(7);
 		Creature *c = getCreatureByName(name);
-#ifdef TIJN_WILDCARD
-                std::string namecard;
-        if(hasWildcard(name)) {//Testing if name have ~ inside him
-namecard = getNameByWildcard(name);
-if(namecard != "") {
-c = getCreatureByName(namecard);
-}
-else if(namecard == ".ambiguous") {
-//ambiguous
-std::cout << "Player not found!!!" << std::endl;
-return;
-}
-else {
-//name doesn't exist
-player->sendCancel("Sorry, this player ist not online");
-return;
-}
-}
-
-else {
-//not a wildcard - continue normally
-c = getCreatureByName(name);
-}
-#endif //TIJN_WILDCARD	
 		if (dynamic_cast<Player*>(c))
 		{
 			if(player->mana >= 20)
@@ -8890,41 +7476,6 @@ c = getCreatureByName(name);
 
 
 #endif //CT_EXANI_TERA
-#ifdef EXORI_MAS
-else if ((player && text == "exori mas") && g_config.getGlobalString("exori_mas") == "yes" && (player->vocation == VOCATION_PALADIN) && 
-      !((map->getTile(player->pos))->isPz()) &&
-      (player->mana >= player->level*4))
-    {
-        player->mana -= player->level*4;
-        player->addManaSpent(player->level*4);
-        SpectatorVec list;
-        SpectatorVec::iterator it;
-        getSpectators(Range(player->pos), list);
-        for(it = list.begin(); it != list.end(); ++it) 
-        {
-            if (map->canThrowObjectTo(player->pos, (*it)->pos, BLOCK_PROJECTILE) == RET_NOERROR)
-            {
-		 MagicEffectClass me;
-		 me.attackType = ATTACK_PHYSICAL;
-		 me.animationEffect = NM_ANI_ARROW;
-		 me.animationColor = 0xB4;
-		 me.damageEffect = NM_ME_MAGIC_ENERGIE;
-		 me.drawblood = true;
-		 me.maxDamage = int(((player->skills[4][SKILL_LEVEL] * 1.5) + (player->maglevel * 1.5) + (player->level * 2)) * 0.35f);
-		 me.minDamage = int(((player->skills[4][SKILL_LEVEL] * 1.5) + (player->maglevel * 1.5) + (player->level * 2)) * 0.70f);
-
-		 me.offensive = true;
-		 creatureThrowRune(player, (*it)->pos, me);
-		 player->exhaustedTicks = 0;
-            }
-	}
-    }
-    else if ((player && text == "exori mas") && (player->mana < player->level*4))
-    {
-         player->sendTextMessage(MSG_SMALLINFO, "You do not have enough mana.",player->pos, NM_ME_PUFF);
-    }
-    }
-#endif //EXORI_MAS
 }
 
 
@@ -9048,10 +7599,6 @@ void Game::onPvP(Creature* creature, Creature* attacked, bool murder)
      }
     if (player->atkMode == 1)
         return;
-#ifdef _NG_BBK_PVP__   
-    if (attackedPlayer->atkMode == 1)
-        return;
-#endif //_NG_BBK_PVP__
 #endif //_NG_BBK_PVP__
 
 	player->pzLocked = true;
@@ -9331,7 +7878,7 @@ void Game::checkShutdown(int minutes)
             (*it).second->sendTextMessage(MSG_RED_INFO, msg.str().c_str());
             ++it;
         }
-         eventShutdown = addEvent(makeTask(60000, boost::bind(&Game::checkShutdown, this, minutes - 1)));
+         addEvent(makeTask(60000, boost::bind(&Game::checkShutdown, this, minutes - 1)));
     }
     else if (minutes == 0)
     {
@@ -9364,7 +7911,7 @@ void Game::checkShutdown(int minutes)
             ++it;
         }
 
-        eventShutdown = addEvent(makeTask(60000, boost::bind(&Game::checkShutdown, this, minutes - 1)));
+        addEvent(makeTask(60000, boost::bind(&Game::checkShutdown, this, minutes - 1)));
     }
 
   
@@ -9378,6 +7925,7 @@ void Game::setMaxPlayers(uint32_t newmax)
 	Status::instance()->playersmax = newmax;
 }
 #endif //YUR_CMD_EXT
+
 
 #ifdef YUR_CLEAN_MAP
 long Game::cleanMap()
@@ -9437,27 +7985,7 @@ long Game::beforeClean()
         addEvent(makeTask(120000, std::mem_fun(&Game::autocleanMap)));
 }
 #endif //YUR_CLEAN_MAP
-/*
-//bbkowner
-long Game::cleanOwner()
-{
-    OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::cleanOwner()");
-	list<decayBlock*>::iterator it;
-	for(it = decayVector.begin();it != decayVector.end();){
-		//(*it)->decayTime -= t;
-		if((*it)->decayTime <= 60000){
-			list<Item*>::iterator it22;
-			for(it22 = (*it)->decayItems.begin(); it22 != (*it)->decayItems.end(); it22++){
-				Item* item = *it22;
-				if(item->getOwner() != "")
-				item->setOwner("");
-            }
-        }
-    }
-    addEvent(makeTask(10000, std::mem_fun(&Game::cleanOwner)));
-}
-//bbkowner
-*/
+
 #ifdef _BBK_AUTOBOARDCASTER
 long Game::AutoBoardcaster()
 {
@@ -9886,8 +8414,6 @@ mana = g_config.MANA_SPRITE;
 		mana = g_config.MANA_DRAGONBREATH;
 	}
 	
-
-	
 	else if (wandid == ITEM_SILV && player->vocation == VOCATION_SORCERER &&
 		player->mana >= g_config.MANA_SILV && player->getLevel() >= 2000)
 	{
@@ -10105,43 +8631,6 @@ void Game::globalMsg(MessageClasses mclass,const std::string &text)
      }
 }
 */
-
-#ifdef TIJN_WILDCARD
-std::string Game::getNameByWildcard(const std::string &wildcard)
-{
-    OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::getNameByWildcard()");
-    std::string wantedname = wildcard;
-    wantedname.erase(wantedname.length() - 1, wantedname.length());//remove the ~
-    std::transform(wantedname.begin(), wantedname.end(), wantedname.begin(), upchar);
-    std::string outputname = "";
-    for(AutoList<Player>::listiterator it = Player::listPlayer.list.begin(); it != Player::listPlayer.list.end(); ++it){
-        if((*it).second) {
-            std::string name = (*it).second->getName();
-            if(name.length() > wantedname.length()) {
-                name.erase(wantedname.length(), name.length());
-                std::transform(name.begin(), name.end(), name.begin(), upchar);
-                if(name == wantedname) { 
-                    if(outputname == "") {
-                        outputname = (*it).second->getName();
-                    }
-                    else {
-                        return ".ambiguous";
-                    }
-                }
-            }
-        }
-    }
-    return outputname;
-}
-
-bool Game::hasWildcard(const std::string &text) 
-{
-if(text[text.length()-1] == '~') {
-return true;
-}
-return false;
-} 
-#endif //TIJN_WILDCARD  
 #ifdef CTRL_Y
 void Game::banPlayer(Player *player, std::string reason, std::string action, std::string comment, bool IPban)
 {
@@ -10186,21 +8675,6 @@ if(IpNetMask.first > 0)
     bannedIPs.push_back(IpNetMask);
         }
         player->kickPlayer();
-//
-//char buf[64];
-//		time_t ticks = time(0);
-//#ifdef USING_VISUAL_2005
-//		tm now;
-//		localtime_s(&now, &ticks);
-//		strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M", &now);
-//#else
-//		strftime(buf, sizeof(buf), "%d/%m/%Y %H:%M", localtime(&ticks));
-//#endif //USING_VISUAL_2005
-//		Player *GM = dynamic_cast<Player*>(c);
-//		std::ofstream out("data/logs/bans.log", std::ios::app);
-//		out << "[" << buf << "] " <<player->getName()  << " -> " << player->getName() << " zostal zbanowany za: " << Reason << ".<br><br>" << std::endl;
-//		out.close();
-//
      }
 }
 #endif //CTRL_Y
@@ -10630,37 +9104,31 @@ return false;
 }
 void Game::autoPlayerSave()
 {
-    //std::cout << ":: Autosaving characters...    ";
-	if(playerSave()){
-	//std::cout << "[Done.]" << std::endl;
-    }
-	else{
-	//std::cout << "[Failed.]" << std::endl;
-    }
-
+    std::cout << ":: Autosaving characters...    ";
+	if(playerSave())
+	std::cout << "[Done.]" << std::endl;
+	else
+	std::cout << "[Failed.]" << std::endl;
+	
 	addEvent(makeTask(g_config.getGlobalNumber("playersave", 1)*60000, std::mem_fun(&Game::autoPlayerSave)));
 }
 void Game::autoHouseSave()
 {
-    //std::cout << ":: Autosaving houses...         ";
-	if(houseSave()){
-	//std::cout << "[Done.]" << std::endl;
-    }
-	else{
-	//std::cout << "[Failed.]" << std::endl;
-    }
+    std::cout << ":: Autosaving houses...         ";
+	if(houseSave())
+	std::cout << "[Done.]" << std::endl;
+	else
+	std::cout << "[Failed.]" << std::endl;
 	
 	addEvent(makeTask(g_config.getGlobalNumber("housesave", 1)*60000, std::mem_fun(&Game::autoHouseSave)));
 }
 void Game::autoguildSave()
 {
-    //std::cout << ":: Autosaving guilds...         ";
-	if(guildSave()){
-	//std::cout << "[Done.]" << std::endl;
-    }
-	else{
-	//std::cout << "[Failed.]" << std::endl;
-    }
+    std::cout << ":: Autosaving guilds...         ";
+	if(guildSave())
+	std::cout << "[Done.]" << std::endl;
+	else
+	std::cout << "[Failed.]" << std::endl;
 	
 	addEvent(makeTask(g_config.getGlobalNumber("guildSave", 1)*60000, std::mem_fun(&Game::autoguildSave)));
 }
@@ -10895,30 +9363,20 @@ void Game::newOwner(Player* newbie,Npc* mynpc , const Position& pos, long price)
     unsigned long money = newbie->getMoney();
     if (tile && tile->getHouse())
 	{
-        time_t seconds;
-        seconds = time(NULL);
-        int time = seconds/3600;
-        
         if(tile->getHouse()->getOwner() != "")//owner.empty()
         {
         mynpc->doSay("This house already have a owner!!");
         return;
         }
+        
         else if (money < price)
         {
         mynpc->doSay("Sorry, you don't have money to buy this house");
         return;
         }
-        else if(tile->getHouse() && tile->getHouse()->checkHouseCount(newbie) >= g_config.getGlobalNumber("maxhouses", 0)){
-        mynpc->doSay("Sorry, you cannot buy more houses!!");
-        return;
-        }
-        else if (newbie && !newbie->premmium){
-        mynpc->doSay("You dont have a premium account.");
-        return;
-        }
-        else if (tile->getHouse() && newbie->level < g_config.LEVEL_HOUSE){
-        mynpc->doSay("You need higher level to buy house.");
+        else if (newbie->housex != 0 || newbie->rentTime != 0)
+        {
+        mynpc->doSay("Sorry, you already have an house!!");
         return;
         }
         /*else if (newbie->houseCount >= g_config.getGlobalNumber("maxhouse",10000))
@@ -10933,15 +9391,10 @@ void Game::newOwner(Player* newbie,Npc* mynpc , const Position& pos, long price)
         newbie->housey = pos.y;
         newbie->housez = pos.z;
 		tile->getHouse()->setOwner(newbie->getName());
-//        long time = (long long)(OTSYS_TIME()/1000);
-//        time_t seconds;
-//        seconds = time(NULL);
-//        int time = seconds/3600;
-        long housetime = (long)(g_config.getGlobalNumber("housetime",168));
+        long time = (long long)(OTSYS_TIME()/1000);
+        long housetime = (long)(g_config.getGlobalNumber("housetime",10000));
+        newbie->rentTime = time+housetime;
         tile->getHouse()->setLast(time+housetime);
-        
-//        newbie->rentTime = time+housetime;
-//        tile->getHouse()->setLast(time+housetime);
         newbie->rentPrice = price;
         mynpc->doSay("Thank you. Please pay correctly your rent house.");
 		newbie->houseRightsChanged = true;
@@ -10960,7 +9413,7 @@ Tile* tile = getTile(pos.x,pos.y,pos.z);
 	{
         if(tile->getHouse()->getOwner() == player->getName())
         {
-//        Houses::RemoveHouseItems(this,tile->getHouse()->getName(),player);
+        Houses::RemoveHouseItems(this,tile->getHouse()->getName(),player);
         /*tile->getHouse()->setOwner("");
         tile->getHouse()->setSubOwners("");
         tile->getHouse()->setGuests("");*/
@@ -10968,19 +9421,18 @@ Tile* tile = getTile(pos.x,pos.y,pos.z);
         }
     }
 }
-/*
+
 void Game::RemoveItems(Player* player, const std::string hname, bool first)
 {
 if(first)
 addEvent(makeTask(2000, boost::bind(&Game::RemoveItems, this, player,  hname, false)));
 else
 {
-//Houses::RemoveHouseItems(this,hname,player);
+Houses::RemoveHouseItems(this,hname,player);
 Houses::Save(this);
 delete player;
 }
 }
-*/
 void Game::StackableUpdate(const Position& pos)
 {
 
@@ -11199,8 +9651,7 @@ if (contains && Items != NULL && !Items->isRemoved && (Items->getID() >= ITEM_DE
         s << " item.";
         }
         //s << "\nPlease, don't stay with depot full at side of (DEPOT) container or you can loose items sent to you by parcel,house items and letters. Thanks..";
-//        player->sendTextMessage(MSG_EVENT, s.str().c_str());
-player->sendTextMessage(MSG_EVENT, s.str().c_str());
+        player->sendTextMessage(MSG_EVENT, s.str().c_str());
 }
 }
 //return;
@@ -11232,541 +9683,3 @@ StackableUpdate(pos);
 //this->addEvent(makeTask(time, boost::bind(&Game::TransformOrRemoveItem, this,pos, itemID, isTile,0,false)));
 }
 #endif //TILES_WORK
-#ifdef BD_DOWN
-bool Game::canDelete(Player *player, unsigned short itemid, Position toPos, Position fromPos, int from_stack, unsigned char count)
-{
-     OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::canDelete()");
-     Tile *toTile = getTile(toPos.x,toPos.y,toPos.z);
- 
-#ifdef WALLS_FIX
-Item* trash = dynamic_cast<Item*>(getThing(fromPos, from_stack, player));
-if(trash && trash->isNotMoveable()) {
-std::cout << "Nick: " << player->getName() << "chce usunac sciane." << std::endl; //Zapisujemy kto chce usun¹æ œciane :)                          
-return true;
-}
-#endif //WALLS_FIX
-     if(itemid == 99 || (itemid >= 4329 && itemid <= 4555))
-         return false;
-     else if(fromPos.x != 0xFFFF && ((abs(player->pos.x - fromPos.x) > 1) || (abs(player->pos.y - fromPos.y) > 1) || (player->pos.z != fromPos.z)))
-        return false;
-     else if(map->canThrowObjectTo(player->pos, toPos, BLOCK_PROJECTILE) != RET_NOERROR)
-        return false;
-     else if (!FixByReX(toTile))
-        return false;   
-     else if(toPos.x == 0xFFFF)
-         return false;
-     if(trash){
-         trash->pos = fromPos;
-         if((abs(player->pos.x - toPos.x) > trash->throwRange) || (abs(player->pos.y - toPos.y) > trash->throwRange)) {        
-            return false;
-         }
- 
-         Tile *toTile = map->getTile(toPos);
-         if(toTile){
-             if((toTile->ground->getID() >= GROUND_WATER1 && toTile->ground->getID() <= GROUND_WATER4) || (toTile->ground->getID() >= GROUND_WATER5 && toTile->ground->getID() <= GROUND_WATER16) || (toTile->ground->getID() == GROUND_WATER17) || (toTile->ground->getID() >= GROUND_WATER18 && toTile->ground->getID() <= GROUND_WATER35) || (toTile->ground->getID() >= GROUND_WATER36 && toTile->ground->getID() <= GROUND_WATER38) || (toTile->ground->getID() >= GROUND_WATER39 && toTile->ground->getID() <= GROUND_WATER44) || (toTile->ground->getID() >= GROUND_LAVA1 && toTile->ground->getID() <= GROUND_SWAMP4) || (toTile->ground->getID() >= GROUND_BLACK_SWAMP1 && toTile->ground->getID() <= GROUND_BLACK_SWAMP4)){
-                 if(!trash->isNotMoveable() && trash->isBlocking())
-                     return false;
-                 else if(trashObjects(player, toTile, trash, toPos, fromPos, from_stack, count))
-                     return true;
-             }
-#ifdef WALLS_FIX
-Item *toItem = dynamic_cast<Item*>(toTile->getTopTopItem());
-if(trash && trash->isNotMoveable() && toItem->getID() == ITEM_DUSTBIN) {
-std::cout << "Nick: " << player->getName() << "chce usunac sciane." << std::endl; //Zapisujemy kto chce usun¹æ œciane :)                          
-return true;
-}
-#else
-Item *toItem = dynamic_cast<Item*>(toTile->getTopTopItem());
-#endif //WALLS_FIX
-             if(toItem && toItem->getID() == ITEM_DUSTBIN){
-                 if(!trash->isNotMoveable() && trash->isBlocking())
-                     return false;
-                 else if(trashObjects(player, toTile, trash, toPos, fromPos, from_stack, count))
-                     return true;
-             }
-         }
-     }
- 
-     return false;
-}     
- 
-bool Game::trashObjects(Player *player, Tile *toTile, Item *trash, Position toPos, Position fromPos, int from_stack, unsigned char count)
-{
-//OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::trashObjects()");
-if(toTile){
-         switch(toTile->ground->getID()){
-             case GROUND_WATER1:
-             case GROUND_WATER2:
-             case GROUND_WATER3:
-             case GROUND_WATER4:
-             case GROUND_WATER5:
-             case GROUND_WATER6:
-             case GROUND_WATER7:
-             case GROUND_WATER8:
-             case GROUND_WATER9:
-             case GROUND_WATER10:
-             case GROUND_WATER11:
-             case GROUND_WATER12:
-             case GROUND_WATER13:
-             case GROUND_WATER14:
-             case GROUND_WATER15:
-             case GROUND_WATER16:
-             case GROUND_WATER17:
-             case GROUND_WATER18:
-             case GROUND_WATER19:
-             case GROUND_WATER20:
-             case GROUND_WATER21:
-             case GROUND_WATER22:
-             case GROUND_WATER23:
-             case GROUND_WATER24:
-             case GROUND_WATER25:
-             case GROUND_WATER26:
-             case GROUND_WATER27:
-             case GROUND_WATER28:
-             case GROUND_WATER29:
-             case GROUND_WATER30:
-             case GROUND_WATER31:
-             case GROUND_WATER32:
-             case GROUND_WATER33:
-             case GROUND_WATER34:
-             case GROUND_WATER35:
-             case GROUND_WATER36:
-             case GROUND_WATER37:
-             case GROUND_WATER38:
-             case GROUND_WATER39:
-             case GROUND_WATER40:
-             case GROUND_WATER41:
-             case GROUND_WATER42:
-             case GROUND_WATER43:
-             case GROUND_WATER44:
-             spectatorEffect(toPos, NM_ME_LOOSE_ENERGY);
-             if(trashItems(player, trash, fromPos, from_stack, count))
-                 return true;     
-             break;
-             case GROUND_LAVA1:
-             case GROUND_LAVA2:
-             case GROUND_LAVA3:
-             case GROUND_LAVA4:   
-             spectatorEffect(toPos, NM_ME_HITBY_FIRE);
-             if(trashItems(player, trash, fromPos, from_stack, count))
-                 return true;
-             break;
-             case GROUND_SWAMP1:
-             case GROUND_SWAMP2:
-             case GROUND_SWAMP3:
-             case GROUND_SWAMP4:
-             spectatorEffect(toPos, NM_ME_POISEN_RINGS);
-             if(trashItems(player, trash, fromPos, from_stack, count))
-                 return true;
-             break;
-             case GROUND_BLACK_SWAMP1:
-             case GROUND_BLACK_SWAMP2:
-             case GROUND_BLACK_SWAMP3:
-             case GROUND_BLACK_SWAMP4:
-             spectatorEffect(toPos, NM_ME_MORT_AREA);
-             if(trashItems(player, trash, fromPos, from_stack, count))
-                 return true;
-             break;
-}
-}
-return false;
-}
- 
-bool Game::trashItems(Player *player, Item *trash, Position fromPos, int from_stack, unsigned char count)
-{
-    //OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::trashItems()");
- 
-    if(trash && player){
-        if(trash->isStackable()){
-            if(trash->getItemCountOrSubtype() > count){
-                trash->setItemCountOrSubtype(trash->getItemCountOrSubtype() - count);
-                sendUpdateThing(player,fromPos,trash,from_stack);
-                player->updateInventoryWeigth();
-                return true;
-            }
-            else{
-                if(removeThing(player, fromPos, trash)){
-                    player->updateInventoryWeigth();
-                    return true;
-                }
-            }
-        }
-        else{
-            if(removeThing(player, fromPos, trash)){
-                player->updateInventoryWeigth();
-                return true;
-             }
-        }
-    }
-    return false;
-}
- 
-bool Game::canTeleportItem(Player *player, unsigned short itemid, Position toPos, Position fromPos, int from_stack, unsigned char count)
-{
-     OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::canTeleportItem()");
-     Tile *toTile = getTile(toPos.x,toPos.y,toPos.z);
- 
-     if(itemid == 99 || (itemid >= 4329 && itemid <= 4555))
-         return false;
-     else if(fromPos.x != 0xFFFF && ((abs(player->pos.x - fromPos.x) > 1) || (abs(player->pos.y - fromPos.y) > 1) || (player->pos.z != fromPos.z)))
-        return false;
-     else if(map->canThrowObjectTo(player->pos, toPos, BLOCK_PROJECTILE) != RET_NOERROR)
-        return false;
-     else if(toPos.x == 0xFFFF)
-         return false;
-     else if (!FixByReX(toTile))
-        return false;
-     else if(!checkChangeFloor(map->getTile(toPos), getTile(toPos.x,toPos.y,toPos.z+1)))
-        return false;
- 
-     Item* tpItem = dynamic_cast<Item*>(getThing(fromPos, from_stack, player));
-     if(tpItem){
-         tpItem->pos = fromPos;
-         if((abs(player->pos.x - toPos.x) > tpItem->throwRange) || (abs(player->pos.y - toPos.y) > tpItem->throwRange)) {        
-            return false;
-         }
- 
-         if(tpItem->isStackable()){
-             if(tpItem->getItemCountOrSubtype() > count){
-                 tpItem->setItemCountOrSubtype(tpItem->getItemCountOrSubtype() - count);
-                 Item *newitem = Item::CreateItem(tpItem->getID(), count);
-                 addThing(player,getTeleportPos(toPos),newitem);
-                 sendUpdateThing(player,fromPos,tpItem,from_stack);
-                 player->updateInventoryWeigth();
-                 return true;
-             }
-             else{
-                 if(removeThing(player, fromPos, tpItem)){
-                     addThing(player,getTeleportPos(toPos),tpItem);
-                     player->updateInventoryWeigth();
-                     return true;
-                 }
-             }
-         }
-         else{
-             if(removeThing(player, fromPos, tpItem)){
-                 addThing(player,getTeleportPos(toPos),tpItem);
-                 player->updateInventoryWeigth();
-                 return true;
-             }
-         }
-     }
-     return false;
-}
- 
-Position Game::getTeleportPos(Position to)
-{
-Tile *toTile = map->getTile(to);
-if(toTile->ground && toTile->ground->floorChangeDown())
-{
-Tile* downTile = getTile(to.x, to.y, to.z+1);
-if(downTile){
-//diagonal begin
-if(downTile->floorChange(NORTH) && downTile->floorChange(EAST)){
-return Position(to.x-1, to.y+1, to.z+1);
-}
-else if(downTile->floorChange(NORTH) && downTile->floorChange(WEST)){
-return Position(to.x+1, to.y+1, to.z+1);
-}
-else if(downTile->floorChange(SOUTH) && downTile->floorChange(EAST)){
-return Position(to.x-1, to.y-1, to.z+1);
-}
-else if(downTile->floorChange(SOUTH) && downTile->floorChange(WEST)){
-return Position(to.x+1, to.y-1, to.z+1);
-}
-//diagonal end
-else if(downTile->floorChange(NORTH)){
-return Position(to.x, to.y+1, to.z+1);
-}
-else if(downTile->floorChange(SOUTH)){
-return Position(to.x, to.y-1, to.z+1);
-}
-else if(downTile->floorChange(EAST)){
-return Position(to.x-1, to.y, to.z+1);
-}
-else if(downTile->floorChange(WEST)){
-return Position(to.x+1, to.y, to.z+1);
-}
-//floor change down
-else if(Item::items[toTile->ground->getID()].floorChangeDown){
-return Position(to.x, to.y, to.z+1);
-}
-else {
-return Position(to.x, to.y, to.z+1);
-}
-}
-}
-//diagonal begin
-else if(toTile->floorChange(NORTH) && toTile->floorChange(EAST)){
-return Position(to.x+1, to.y-1, to.z-1);
-}
-else if(toTile->floorChange(NORTH) && toTile->floorChange(WEST)){
-return Position(to.x-1, to.y-1, to.z-1);
-}
-else if(toTile->floorChange(SOUTH) && toTile->floorChange(EAST)){
-return Position(to.x+1, to.y+1, to.z-1);
-}
-else if(toTile->floorChange(SOUTH) && toTile->floorChange(WEST)){
-return Position(to.x-1, to.y+1, to.z-1);
-}                  
-else if(toTile->floorChange(NORTH)){
-return Position(to.x, to.y-1, to.z-1);
-}
-else if(toTile->floorChange(SOUTH)){
-return Position(to.x, to.y+1, to.z-1);
-}
-else if(toTile->floorChange(EAST)){
-return Position(to.x+1, to.y, to.z-1);
-}
-else if(toTile->floorChange(WEST)){
-return Position(to.x-1, to.y, to.z-1);
-}                                      
-if(!toTile){
-Tile* downTile = getTile(to.x, to.y, to.z+1);
-if(!downTile)
-{
-return Position(0,0,0);
-}
-else if(downTile->floorChange(NORTH) && downTile->floorChange(EAST)){
-return Position(to.x-2, to.y+2, to.z+1);
-}
-else if(downTile->floorChange(NORTH) && downTile->floorChange(WEST)){
-return Position(to.x+2, to.y+2, to.z+1);
-}
-else if(downTile->floorChange(SOUTH) && downTile->floorChange(EAST)){
-return Position(to.x-2, to.y-2, to.z+1);
-}
-else if(downTile->floorChange(SOUTH) && downTile->floorChange(WEST)){
-return Position(to.x+2, to.y-2, to.z+1);
-}                                                     
-else if(downTile->floorChange(NORTH)){
-return Position(to.x, to.y + 1, to.z+1);
-}
-else if(downTile->floorChange(SOUTH)){
-return Position(to.x, to.y - 1, to.z+1);
-}
-else if(downTile->floorChange(EAST)){
-return Position(to.x - 1, to.y, to.z+1);
-}
-else if(downTile->floorChange(WEST)){
-return Position(to.x + 1, to.y, to.z+1);
-}
-}
-}
- 
-bool Game::checkChangeFloor(Tile *toTile, Tile* downTile)
-{
-if(toTile->ground && toTile->ground->floorChangeDown())
-{
-if(downTile){
-if(downTile->floorChange(NORTH) && downTile->floorChange(EAST)){
-return true;
-}
-else if(downTile->floorChange(NORTH) && downTile->floorChange(WEST)){
-return true;
-}
-else if(downTile->floorChange(SOUTH) && downTile->floorChange(EAST)){
-return true;
-}
-else if(downTile->floorChange(SOUTH) && downTile->floorChange(WEST)){
-return true;
-}
-else if(downTile->floorChange(NORTH)){
-return true;
-}
-else if(downTile->floorChange(SOUTH)){
-return true;
-}
-else if(downTile->floorChange(EAST)){
-return true;
-}
-else if(downTile->floorChange(WEST)){
-return true;
-}
-else if(Item::items[toTile->ground->getID()].floorChangeDown){
-return true;
-}
-else { 
-return true;
-}
-}
-}
-else if(toTile->floorChange(NORTH) && toTile->floorChange(EAST)){
-return true;
-}
-else if(toTile->floorChange(NORTH) && toTile->floorChange(WEST)){
-return true;
-}
-else if(toTile->floorChange(SOUTH) && toTile->floorChange(EAST)){
-return true;
-}
-else if(toTile->floorChange(SOUTH) && toTile->floorChange(WEST)){
-return true;
-}                    
-else if(toTile->floorChange(NORTH)){
-return true;
-}
-else if(toTile->floorChange(SOUTH)){
-return true;
-}
-else if(toTile->floorChange(EAST)){
-return true;
-}
-else if(toTile->floorChange(WEST)){
-return true;
-}
-if(!toTile){
-if(!downTile)
-{
-return false;
-}
-else if(downTile->floorChange(NORTH) && downTile->floorChange(EAST)){
-return true;
-}
-else if(downTile->floorChange(NORTH) && downTile->floorChange(WEST)){
-return true;
-}
-else if(downTile->floorChange(SOUTH) && downTile->floorChange(EAST)){
-return true;
-}
-else if(downTile->floorChange(SOUTH) && downTile->floorChange(WEST)){
-return true;
-}                                                      
-else if(downTile->floorChange(NORTH)){
-return true;
-}
-else if(downTile->floorChange(SOUTH)){
-return true;
-}
-else if(downTile->floorChange(EAST)){
-return true;
-}
-else if(downTile->floorChange(WEST)){
-return true;
-}
-}
-return false;
-}
-/*
-void Game::StackableUpdate(const Position& pos)
-{
-
-OTSYS_THREAD_LOCK_CLASS lockClass(gameLock, "Game::StackableUpdate()");
-
-SpectatorVec list;
-SpectatorVec::iterator it;
-getSpectators(Range(pos, true), list);
-
-//players
-for(it = list.begin(); it != list.end(); ++it) {
-if(dynamic_cast<Player*>(*it)) {
-(*it)->onTileUpdated(pos);
-}
-}
-
-//none-players
-for(it = list.begin(); it != list.end(); ++it) {
-if(!dynamic_cast<Player*>(*it)) {
-(*it)->onTileUpdated(pos);
-}
-}
-
-return;
-}
-
-bool Game::FixByReX(const Tile *toTile)
-{
-if (toTile && !toTile->ground || !toTile){//!toTile
-return false;
-}
-return true;
-}
-
-*/
-
-void Game::spectatorEffect(Position pos, unsigned char type)
-{
-    SpectatorVec list;
-    SpectatorVec::iterator it;
-    getSpectators(Range(pos, true), list);
-          
-    for(it = list.begin(); it != list.end(); ++it) {
-        if(Player* p = dynamic_cast<Player*>(*it)) {
-            p->sendMagicEffect(pos, type);
-        }
-    }
-}
-#endif //BD_DOWN
-#ifdef CAYAN_POISONMELEE
-void Game::PoisonMelee(Creature* creature, Creature* target, unsigned char animationColor, unsigned char damageEffect, unsigned char hitEffect, attacktype_t attackType, bool offensive, int maxDamage, int minDamage, long ticks, long count)
-{
-    unsigned long targetID;
-    if(target)
-    targetID = target->getID();
-    else 
-    targetID = 0;
-    
-    MagicEffectTargetCreatureCondition magicCondition = MagicEffectTargetCreatureCondition(targetID);
-    magicCondition.animationColor = animationColor;
-    magicCondition.damageEffect = damageEffect;
-    magicCondition.hitEffect = hitEffect;
-    magicCondition.attackType = attackType;
-    magicCondition.maxDamage = maxDamage;
-    magicCondition.minDamage = minDamage;
-    magicCondition.offensive = offensive;
-    CreatureCondition condition = CreatureCondition(ticks, count, magicCondition);
-    creature->addCondition(condition, true);
-    
-    Player *player = dynamic_cast<Player*>(creature);
-    if(player)
-    player->sendIcons();
-}
-#endif //CAYAN_POISONMELEE
-#ifdef CAYAN_POISONARROW
-void Game::poisonArrow(Creature* c, const Position& pos)
-{
-	MagicEffectAreaNoExhaustionClass runeAreaSpell;
-
-	runeAreaSpell.attackType = ATTACK_POISON;
-	runeAreaSpell.animationEffect = NM_ME_MAGIC_POISEN;
-	runeAreaSpell.hitEffect = NM_ME_POISEN_RINGS;
-	runeAreaSpell.areaEffect = NM_ME_POISEN_RINGS;
-	runeAreaSpell.animationColor = 19;
-	runeAreaSpell.drawblood = true;
-	runeAreaSpell.offensive = true;
-
-	runeAreaSpell.direction = 1;
-	creatureThrowRune(c, pos, runeAreaSpell);
-	int probability = random_range(1, 100);
-	Player *attacker = dynamic_cast<Player*>(c);
-	Creature *attackedCreature = getCreatureByPosition(pos.x, pos.y, pos.z);
-    if((attacker && attackedCreature && (attackedCreature->getImmunities()) != ATTACK_POISON) && probability <  60)
-        PoisonMelee(attackedCreature, attacker, COLLOR_GREEN, NM_ME_POISEN_RINGS, NM_ME_POISEN_RINGS, ATTACK_POISON, true, g_config.getGlobalNumber("poisonarrowdamage", 10), g_config.getGlobalNumber("poisonarrowdamage", 10), (long)g_config.getGlobalNumber("exhausted", 1500), (long)g_config.getGlobalNumber("poisonarrowhits", 5));
-}
-#endif //CAYAN_POISONARROW   
-#ifdef CAYAN_SPELLBOOK
-bool Game::setSpellbookText(Player* player, Item* item)
-{
-    std::stringstream text;
-    item->setText("");
-    for(StringVector::iterator it = player->learnedSpells.begin(); it != player->learnedSpells.end(); ++it){
-        if(it != player->learnedSpells.end()){
-            std::map<std::string, Spell*>* tmp = spells.getAllSpells();
-            if(tmp){
-                std::map<std::string, Spell*>::iterator sit = tmp->find((*it));
-                if(sit != tmp->end()){
-                    InstantSpell* instant = dynamic_cast<InstantSpell*>(sit->second);
-                    if(instant){
-                        text << "\'" << instant->getName() << "' · \'" << instant->getWords() << "\' · mana: " << instant->getMana() << " · level: " << instant->getMagLv();
-                        text << "\n";
-                    }
-                }
-            }
-        }
-    }   
-    item->setText(text.str());
-    player->sendTextWindow(item, strlen(text.str().c_str()), true);
-    return true; 
-}
-
-#endif //CAYAN_SPELLBOOK

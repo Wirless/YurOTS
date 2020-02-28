@@ -33,6 +33,10 @@ extern LuaScript g_config;
 
 extern Spells spells;
 
+#ifdef ITEMS_BY_NAME
+extern Game g_game;
+#endif //ITEMS_BY_NAME
+
 long Items::dwMajorVersion = 0;
 long Items::dwMinorVersion = 0;
 long Items::dwBuildNumber = 0;
@@ -69,6 +73,11 @@ ItemType::ItemType()
 	newCharges = 0;
 	newTime = 0;
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+    reqLevel        = 0;
+#endif //PALL_REQ_LVL
+
 #ifdef TP_TRASH_BINS
 	isDeleter = false;
 #endif //TP_TRASH_BINS
@@ -158,7 +167,6 @@ bool ItemType::isFluidContainer() const
 	return (group == ITEM_GROUP_FLUID);
 }
 
-
 Items::Items()
 {
 }
@@ -211,12 +219,12 @@ inline subfight_t translateOTBsubfight_t(subfightOTB_t sf)
 	case OTB_DIST_SNOWBALL:
 		return DIST_SNOWBALL;
 		break;
-	case OTB_DIST_POWERBOLT:
-		return DIST_POWERBOLT;
-		break;
-	case OTB_DIST_SPEAR:
+    case OTB_DIST_SPEAR:
 		return DIST_SPEAR;
 		break;
+    case OTB_DIST_POWERBOLT:
+		return DIST_POWERBOLT;
+		break;	
 	case OTB_DIST_POISONFIELD:
 		return DIST_POISONFIELD;
 		break;
@@ -267,7 +275,7 @@ int Items::loadFromOtb(std::string file)
 	}
 
 	if(Items::dwMinorVersion != CLIENT_VERSION_760){
-		std::cout << "Not supported items.otb client version." << std::endl;
+		std::cout << "Aktualna wersjaitems.otb nie pasuje do klient'a." << std::endl;
 		return ERROR_INVALID_FORMAT;
 	}
 
@@ -382,6 +390,15 @@ int Items::loadFromOtb(std::string file)
 								memcpy(name, p, datalen);
 								name[datalen] = 0;
 								iType->name = name;
+#ifdef ITEMS_BY_NAME
+                                std::string tmpname = name;
+                                std::transform(tmpname.begin(), tmpname.end(), tmpname.begin(), tolower);
+                                std::pair<std::string, unsigned short> Bla;
+                                Bla.first = tmpname;
+                                Bla.second = iType->id;
+                                if(Bla.second > 100)
+                                   g_game.itemNameList[tmpname] = Bla.second;
+#endif //ITEMS_BY_NAME
 								break;
 							}
 							case ITEM_ATTR_DESCR:
@@ -779,9 +796,19 @@ bool Items::loadXMLInfos(std::string file)
 					xmlFreeOTSERV(tmp);
 				}
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+                tmp = (char*)xmlGetProp(itemNode, (xmlChar*)"reqLevel");
+                if (tmp)
+                {
+                    itemtype->reqLevel = atoi(tmp);
+                    xmlFreeOTSERV(tmp);
+                }
+#endif //PALL_REQ_LVL
+
 			}
 			else
-				std::cout << "invalid item " << id << std::endl;
+				std::cout << "niepoprawny przedmiot " << id << std::endl;
 		}
 		itemNode = itemNode->next;
 	}
@@ -797,7 +824,7 @@ const ItemType& Items::operator[](int id)
 		return *it->second;
 
 #ifdef __DEBUG__
-	std::cout << "WARNING! unknown itemtypeid " << id << ". using defaults." << std::endl;
+	std::cout << "UWAGA! nieznany itemtypeid " << id << ". uzywam domyslnych." << std::endl;
 #endif
 
 	return dummyItemType;

@@ -46,11 +46,11 @@ void Logger::logMessage(std::string channel, eLogType type, int level,
 		case WARNING:
 			sType = "warning";
 	}
-	std::cout << "Channel: " << channel << std::endl;
-	std::cout << "Type: " << sType << std::endl;
-	std::cout << "Level: " << level << std::endl;
+	std::cout << "Kanal: " << channel << std::endl;
+	std::cout << "Typ: " << sType << std::endl;
+	std::cout << "Poziom: " << level << std::endl;
 	std::cout << "Messafe: " << message << std::endl;
-	std::cout << "Func: " << func << std::endl; 
-	std::cout << "Line: " << line << std::endl; 
-	std::cout << "File: " << file << std::endl; 
+	std::cout << "Funkcja: " << func << std::endl; 
+	std::cout << "Linia: " << line << std::endl; 
+	std::cout << "Plik: " << file << std::endl; 
 }

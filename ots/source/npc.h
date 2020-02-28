@@ -35,6 +35,19 @@ extern "C"
 #include <lualib.h>
 }
 
+#ifdef __KIRO_NPCYELL__
+struct voice
+{
+    bool isYell;
+    std::string msg;
+    short chance;
+    int ticks;
+    int tTicks;
+};
+
+typedef std::vector<voice> voiceVec;
+#endif //__KIRO_NPCYELL__
+
 
 //////////////////////////////////////////////////////////////////////
 // Defines an NPC...
@@ -59,18 +72,26 @@ public:
 	static int luaCreatureGetName2(lua_State *L);
 	static int luaActionAttackCreature(lua_State *L);
 	static int luaCreatureGetPos(lua_State *L);
+	
+	static int luaBuyCont(lua_State *L);
+	
+	
 	static int luaSelfGetPos(lua_State *L);
+	static int luaNowaNazwaItema(lua_State *L);
 
 #ifdef TLM_BUY_SELL
 	static int luaBuyItem(lua_State *L);
 	static int luaSellItem(lua_State *L);
 	static int luaPayMoney(lua_State *L);
 #endif
-
+#ifdef TIJN_SHIP
+static int luaTravel(lua_State *L);
+#endif //TIJN_SHIP
 #ifdef YUR_NPC_EXT
 	static int luaGetPlayerStorageValue(lua_State *L);
 	static int luaSetPlayerStorageValue(lua_State *L);
 	static int luaPlayerRemoveItem(lua_State *L);
+    static int luaPlayerHasItem(lua_State *L);
 	static int luaGetPlayerLevel(lua_State *L);
 	static int luaSetPlayerMasterPos(lua_State* L);
 #endif //YUR_NPC_EXT
@@ -93,11 +114,32 @@ public:
 #ifdef YUR_ROOKGARD
 	static int luaSetPlayerVocation(lua_State* L);
 #endif //YUR_ROOKGARD
-
+#ifdef BLESS
+	static int luaCreatureGetBless(lua_State *L);
+static int luaSetNewBless(lua_State *L);
+static int luaCreatureGetBlessStatusa(lua_State *L);
+static int luaCreatureGetBlessStatusb(lua_State *L);
+static int luaCreatureGetBlessStatusc(lua_State *L);
+static int luaCreatureGetBlessStatusd(lua_State *L);
+static int luaCreatureGetBlessStatuse(lua_State *L);
+#endif //BLESS
+#ifdef NPC_TURNING  
+   static int luaActionLook(lua_State *L);
+#endif //NPC_TURNING
+static int luaPayRent(lua_State *L);
+static int luaBuyHouse(lua_State *L);
+static int luagetMarried(lua_State* L);
+static int luaisMarried(lua_State* L);
 #ifdef YUR_LEARN_SPELLS
 	static int luaGetPlayerVocation(lua_State *L);
 	static int luaLearnSpell(lua_State* L);
 #endif //YUR_LEARN_SPELLS
+static int luaChangeItem(lua_State *L);
+
+static int luaDoPlayerRemoveItemCount(lua_State *L);
+
+	static int luaPromote(lua_State* L);
+	static int luaPremium(lua_State* L);
 
 	bool isLoaded(){return loaded;}
 
@@ -110,6 +152,10 @@ protected:
 class Npc : public Creature
 {
 public:
+#ifdef __KIRO_NPCYELL__
+    voiceVec voices;
+    int ticks;
+#endif //__KIRO_NPCYELL__
 	Npc(const std::string& name, Game* game);
 	virtual ~Npc();
 	virtual void useThing() {
@@ -133,7 +179,7 @@ public:
 	const std::string& getName() const {return name;};
 	fight_t getFightType(){return fighttype;};
 
-	int64_t mana, manamax;
+	int mana, manamax;
 
 	//damage per hit
 	int damage;
@@ -146,6 +192,9 @@ public:
 	void doMove(int dir);
 	void doMoveTo(Position pos);
 	void doAttack(int id);
+	#ifdef NPC_TURNING
+	void doLook(const Creature *creature);
+    #endif //NPC_TURNING
 	bool isLoaded(){return loaded;}
 
 protected:

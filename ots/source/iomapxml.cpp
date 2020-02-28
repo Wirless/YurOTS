@@ -29,16 +29,16 @@ bool IOMapXML::loadMap(Map* map, std::string identifier){
 	char* tmp;
 
 	xmlLineNumbersDefault(1);
-	std::cout << ":: Loaded map " << identifier << std::endl;
+	std::cout << ":: Zaladowalem mape " << identifier << std::endl;
 	doc=xmlParseFile(identifier.c_str());
 	if (!doc) {
-		std::cout << "FATAL: couldnt load map. exiting" << std::endl;
+		std::cout << "FATALNY: nie moge zaladowac mapy. wylaczam" << std::endl;
 		exit(1);
 	}
 	root=xmlDocGetRootElement(doc);
 	if(xmlStrcmp(root->name,(const xmlChar*) "map")){
 		xmlFreeDoc(doc);
-		std::cout << "FATAL: couldnt load map. exiting" << std::endl;
+		std::cout << "FATALNY: nie gmoe zaladowac mapy. wylaczam" << std::endl;
 		exit(1);
 	}
 
@@ -52,7 +52,7 @@ bool IOMapXML::loadMap(Map* map, std::string identifier){
 		map->mapheight = atoi(tmp);
 		xmlFreeOTSERV(tmp);
 	}
-	std::cout << ":: W: " << map->mapwidth << "  H: " << map->mapheight << std::endl;
+	std::cout << ":: Szerokosc: " << map->mapwidth << "  Dlugosc: " << map->mapheight << std::endl;
 
 	std::string spawnfile = "";
 	if(tmp = (char*)xmlGetProp(root, (const xmlChar *) "spawnfile")){
@@ -175,6 +175,9 @@ bool IOMapXML::loadMap(Map* map, std::string identifier){
 					t->topItems.push_back(myitem);
 				else
 					t->downItems.push_back(myitem);
+#ifdef PARCEL_FLOOR					
+					if(myitem->isZItem()) t->zItem++;
+#endif //PARCEL_FLOOR	
 			}
 			p = p->next;
 		}

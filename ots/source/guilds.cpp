@@ -115,11 +115,12 @@ bool Guilds::Guild::reloadGuildInfo(Player* player)
 void Guilds::Guild::save(xmlNodePtr guildNode)
 {
 	xmlNodePtr memberNode;
+	char buf[36];
 
 	for (size_t i = 0; i < members.size(); i++)
 	{
 		memberNode = xmlNewNode(NULL, (const xmlChar*)"member");
-		xmlSetProp(memberNode, (const xmlChar*) "status", (const xmlChar*)str(members[i].status).c_str());
+		xmlSetProp(memberNode, (const xmlChar*) "status", (const xmlChar*)itoa(members[i].status, buf, 10));
 		xmlSetProp(memberNode, (const xmlChar*) "name", (const xmlChar*)members[i].name.c_str());
 		xmlSetProp(memberNode, (const xmlChar*) "rank", (const xmlChar*)members[i].rank.c_str());
 		xmlSetProp(memberNode, (const xmlChar*) "nick", (const xmlChar*)members[i].nick.c_str());
@@ -215,7 +216,7 @@ bool Guilds::Save()
 	{
 		xmlFreeDoc(doc);
 		xmlMutexUnlock(xmlmutex);
-		std::cout << "Failed to save " << file << std::endl;
+		std::cout << "Nieudany zapis " << file << std::endl;
 		return false;
 	}
 }
@@ -240,7 +241,7 @@ void Guilds::DeleteGuild(std::string gname)
 			return;
 		}
 
-	throw std::runtime_error("Guilds: DeleteGuild: guild not found");
+	throw std::runtime_error("Guilds: DeleteGuild: gildia nieznaleziona");
 }
 
 std::string Guilds::GetGuildName(std::string name)
@@ -266,7 +267,7 @@ void Guilds::SetGuildStatus(std::string name, gstat_t status)
 		if (guilds[i]->setGuildStatus(name, status))
 			return;
 
-	throw std::runtime_error("Guilds: SetGuildStatus: player does not belong to any guild");
+	throw std::runtime_error("Guilds: SetGuildStatus: gracz nie nalezy do zadnej gildi!");
 }
 
 void Guilds::SetGuildInfo(std::string name, gstat_t status, std::string rank, std::string gname)
@@ -277,7 +278,7 @@ void Guilds::SetGuildInfo(std::string name, gstat_t status, std::string rank, st
 			guilds[i]->setGuildInfo(name, status, rank);
 			return;
 		}
-	throw std::runtime_error("Guilds: SetGuildInfo: guild not found");
+	throw std::runtime_error("Guilds: SetGuildInfo: gildia nieznaleziona");
 }
 
 void Guilds::ClearGuildInfo(std::string name)
@@ -286,7 +287,7 @@ void Guilds::ClearGuildInfo(std::string name)
 		if (guilds[i]->clearGuildInfo(name))
 			return;
 
-	throw std::runtime_error("Guilds: ClearGuildInfo: player does not belong to any guild");
+	throw std::runtime_error("Guilds: ClearGuildInfo: gracz nie nalezy do zadnej gildi!");
 }
 
 void Guilds::SetGuildNick(std::string name, std::string nick)
@@ -295,7 +296,7 @@ void Guilds::SetGuildNick(std::string name, std::string nick)
 		if (guilds[i]->setGuildNick(name, nick))
 			return;
 
-	throw std::runtime_error("Guilds: SetGuildTitle: player does not belong to any guild");
+	throw std::runtime_error("Guilds: SetGuildTitle: gracz nie nalezy do zadnej gildi!");
 }
 
 void Guilds::ReloadGuildInfo(Player* player)

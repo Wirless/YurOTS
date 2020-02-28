@@ -57,6 +57,9 @@ private:
 	
 	// we have all the parse methods
 	void parsePacket(NetworkMessage &msg);
+	#ifdef VITOR_RVR_HANDLING
+void parseCancelRVR();
+#endif
 	
 	void parseLogout(NetworkMessage &msg);
 	
@@ -89,10 +92,34 @@ private:
 	
 	void parseAttack(NetworkMessage &msg);
 	
+#ifdef BD_FOLLOW
+    void parseFollow(NetworkMessage &msg);
+#endif //BD_FOLLOW
+#ifdef CTRL_Z
+	void parseReportBug(NetworkMessage &msg);
+#endif //CTRL_Z
+	
 	void parseThrow(NetworkMessage &msg);
 	void parseUseItemEx(NetworkMessage &msg);
 	void parseBattleWindow(NetworkMessage &msg);
 	void parseUseItem(NetworkMessage &msg);
+#ifdef CTRL_Y
+	void parseGM(NetworkMessage &msg);
+#endif //CTRL_Y
+#ifdef SDG_VIOLATIONS
+
+    void addViolation(Player* reporter, std::string message); // player uses ctrl-r
+    void removeViolation(std::string rname);    // remove open violation from stack
+    void cancelViolation(std::string rname);    // player cancels violation/logsout
+    void openViolation(NetworkMessage &msg);    // gm answers in violations
+    void closeViolation(NetworkMessage &msg);   // gm closes report
+    void speakToReporter(std::string rname, std::string message);
+    void speakToCounsellor(std::string message);
+    void updateViolationsChannel(NetworkMessage &update); // new/canceled/opened report
+    virtual void sendViolationChannel(Player* gm);  // gm opens violations
+    
+#endif
+
 	void parseCloseContainer(NetworkMessage &msg);
 	void parseUpArrowContainer(NetworkMessage &msg);
 	void parseTextWindow(NetworkMessage &msg);
@@ -141,10 +168,15 @@ private:
 	virtual void sendChannel(unsigned short channelId, std::string channelName);
 	virtual void sendOpenPriv(const std::string &receiver);
 	virtual void sendToChannel(const Creature *creature, SpeakClasses type, const std::string &text, unsigned short channelId);
-	
+virtual void sendFromSys(SpeakClasses type, const std::string &text);
+//virtual void sendFromSys(SpeakClasses type, const char &text);
 	virtual void sendNetworkMessage(NetworkMessage *msg);
 	virtual void sendIcons(int icons);
 	
+#ifdef MOVE_UP
+    virtual void sendThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
+  const Item* fromItem, Container *toContainer);
+#endif //MOVE_UP 
 	//container to container
 	virtual void sendThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
 		const Item* fromItem, int oldFromCount, Container *toContainer, unsigned char to_slotid, const Item *toItem, int oldToCount, int count);
@@ -211,6 +243,9 @@ private:
 	virtual bool CanSee(int x, int y, int z) const;
 	virtual bool CanSee(const Creature*) const;
 	virtual void logout();
+	#ifdef KICK_PLAYER
+    virtual void sendKick();
+    #endif //KICK_PLAYER
 	
 	void flushOutputBuffer();
 	void WriteMsg(NetworkMessage &msg);
@@ -248,7 +283,9 @@ private:
 	virtual void AddCreature(NetworkMessage &msg,const Creature *creature, bool known, unsigned int remove);
 	virtual void AddPlayerStats(NetworkMessage &msg,const Player *player);
 	virtual void AddPlayerInventoryItem(NetworkMessage &msg,const Player *player, int item);
-	virtual void AddCreatureSpeak(NetworkMessage &msg,const Creature *creature, SpeakClasses type, std::string text, unsigned short channelId);
+	virtual void AddCreatureSpeakSay(NetworkMessage &msg,const Creature *creature, Player *player, SpeakClasses type, std::string text, unsigned short channelId);
+	virtual void AddCreatureSpeak(NetworkMessage &msg,const Creature *creature, Player *player, SpeakClasses type, std::string text, unsigned short channelId);
+virtual void AddSystemSpeak(NetworkMessage &msg, SpeakClasses type, std::string text, unsigned short channelId);
 	virtual void AddCreatureHealth(NetworkMessage &msg,const Creature *creature);
 	virtual void AddPlayerSkills(NetworkMessage &msg,const Player *player);
 	virtual void AddRemoveThing(NetworkMessage &msg, const Position &pos,unsigned char stackpos);

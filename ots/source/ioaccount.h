@@ -29,15 +29,14 @@
 /** Baseclass for all Player-Loaders */
 class IOAccount {
   public:
+#ifdef DT_PREMMY
+virtual bool saveAccount(Account acc);
+#endif //DT_PREMMY
 	static IOAccount* instance();
 	/** Get a textual description of what source is used
 	  * \returns Name of the source*/
 	virtual char* getSourceDescription(){return "Account source: NULL";};
 	virtual Account loadAccount(unsigned long accno);
-
-#ifdef YUR_BUILTIN_AAC
-	virtual bool saveAccount(const Account& account);
-#endif //YUR_BUILTIN_AAC
 	
 	virtual bool getPassword(unsigned long accno, const std::string &name, std::string &password);
 

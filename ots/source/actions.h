@@ -1,13 +1,13 @@
 //////////////////////////////////////////////////////////////////////
 // OpenTibia - an opensource roleplaying game
 //////////////////////////////////////////////////////////////////////
-//
+// 
 //////////////////////////////////////////////////////////////////////
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -55,33 +55,38 @@ enum tCanUseRet{
 class Actions
 {
 public:
+int canUse(const Player *player,const Position &pos) const;
 	Actions(){};
 	Actions(Game* igame);
 	bool loadFromXml(const std::string &datadir);
 	virtual ~Actions();
 	void clear();
-
-	bool UseItem(Player* player, const Position &pos,const unsigned char stack,
+	
+	bool UseItem(Player* player, const Position &pos,const unsigned char stack, 
 		const unsigned short itemid, const unsigned char index);
 	bool UseItemEx(Player* player, const Position &from_pos,
 		const unsigned char from_stack,const Position &to_pos,
 		const unsigned char to_stack,const unsigned short itemid);
-
+#ifdef ON_TILE
+    bool luaWalk(Player* player, const Position &pos, //CHANGE onWalk 
+	const unsigned short itemid, const unsigned int itemuid, const unsigned int itemaid);
+    bool luaWalkOff(Player* player, const Position &pos, //CHANGE onWalk
+	const unsigned short itemid, const unsigned int itemuid, const unsigned int itemaid);
+#endif //ON_TILE   
 	bool openContainer(Player *player,Container *container, const unsigned char index);
-
+	
 	Game* game;
 	bool loaded;
 
-	bool isLoaded(){return loaded;}
+	bool isLoaded(){return loaded;}	
 	bool reload();
-
+  
 protected:
 	std::string datadir;
 	typedef std::map<unsigned short, Action*> ActionUseMap;
 	ActionUseMap useItemMap;
 	ActionUseMap uniqueItemMap;
 	ActionUseMap actionItemMap;
-	int canUse(const Player *player,const Position &pos) const;
 	int canUseFar(const Player *player,const Position &to_pos, const bool blockWalls) const;
 	Action *getAction(const Item *item);
 	Action *loadAction(xmlNodePtr xmlaction);
@@ -112,7 +117,7 @@ enum ePlayerInfo{
 struct KnownThing{
 	Thing *thing;
 	tThingType type;
-	PositionEx pos;
+	PositionEx pos;	
 };
 
 class Action
@@ -126,7 +131,10 @@ public:
 	void setAllowFarUse(bool v){allowfaruse = v;};
 	void setBlockWalls(bool v){blockwalls = v;};
 	bool executeUse(Player *player,Item* item, PositionEx &posFrom, PositionEx &posTo);
-
+#ifdef ON_TILE
+  bool executeWalk(Player *player, const unsigned short item, const unsigned int itemUID, const unsigned int itemaid, const Position &posTo); //CHANGE onWalk
+    bool executeWalkOff(Player *player, const unsigned short item, const unsigned int itemUID, const unsigned int itemaid, const Position &posTo); //CHANGE onWalk
+#endif //ON_TILE	
 protected:
 	ActionScript *script;
 	bool loaded;
@@ -139,9 +147,9 @@ public:
 	ActionScript(Game* igame,const std::string &datadir, const std::string &scriptname);
 	virtual ~ActionScript();
 	bool isLoaded()const {return loaded;}
-
+	
 	lua_State* getLuaState(){return luaState;}
-
+	
 	void ClearMap();
 	static void AddThingToMapUnique(Thing *thing);
 	void UpdateThingPos(int uid, PositionEx &pos);
@@ -150,10 +158,23 @@ public:
 	const KnownThing* GetItemByUID(int uid);
 	const KnownThing* GetCreatureByUID(int uid);
 	const KnownThing* GetPlayerByUID(int uid);
-
+	
 	//lua functions
+#ifdef __BBK_PVM_ARENA
+	//BBK PvM Arena
+      static int luaActionGetPVMfromPos(lua_State *L);
+      static int luaActionPlayerToArena(lua_State *L);
+      static int luaActionKickMonsters(lua_State *L);
+#endif //__BBK_PVM_ARENA
+#ifdef __BBK_TRAINING_SWITCH
+	static int luaActionDoPlayerTraining(lua_State *L);
+	static int luaActionDoPlayerMoveSwitch(lua_State *L);
+#endif //__BBK_TRAINING_SWITCH
+#ifdef __BBK_TRAINING
+	static int luaActionDoPlayerTraining(lua_State *L);
+#endif //__BBK_TRAINING
 	static int luaActionDoRemoveItem(lua_State *L);
-	static int luaActionDoFeedPlayer(lua_State *L);
+	static int luaActionDoFeedPlayer(lua_State *L);	
 	static int luaActionDoSendCancel(lua_State *L);
 	static int luaActionDoTeleportThing(lua_State *L);
 	static int luaActionDoTransformItem(lua_State *L);
@@ -161,10 +182,11 @@ public:
 	static int luaActionDoSendMagicEffect(lua_State *L);
 	static int luaActionDoChangeTypeItem(lua_State *L);
 	static int luaActionDoSendAnimatedText(lua_State *L);
-
+	
 	static int luaActionDoPlayerAddSkillTry(lua_State *L);
 	static int luaActionDoPlayerAddHealth(lua_State *L);
 	static int luaActionDoPlayerAddMana(lua_State *L);
+	static int luaActionDoPlayerAddPremium(lua_State *L);
 	static int luaActionDoPlayerAddItem(lua_State *L);
 	static int luaActionDoPlayerSendTextMessage(lua_State *L);
 	static int luaActionDoShowTextWindow(lua_State *L);
@@ -175,7 +197,18 @@ public:
 	static int luaActionDoPlayerSetMasterPos(lua_State *L);
 	static int luaActionDoPlayerSetVocation(lua_State *L);
 	static int luaActionDoPlayerRemoveItem(lua_State *L);
-
+#ifdef BD_CONDITION    
+    static int luaActionCreateCondition(lua_State *L);
+    static int luaActionDoCreateCondition(lua_State *L);
+#endif //BD_CONDITION
+#ifdef RUL_DRUNK
+    static int luaActionDoPlayerSetDrunk(lua_State *L);
+#endif //RUL_DRUNK
+#ifdef ADD_TELEPORT	
+	static int luaActionDoAddTeleport(lua_State *L);
+    static int luaActionDoRemoveTeleport(lua_State *L);
+#endif //ADD_TELEPORT
+	
 	//get item info
 	static int luaActionGetItemRWInfo(lua_State *L);
 	static int luaActionGetThingfromPos(lua_State *L);
@@ -183,10 +216,12 @@ public:
 	static int luaActionDoSetItemActionId(lua_State *L);
 	static int luaActionDoSetItemText(lua_State *L);
 	static int luaActionDoSetItemSpecialDescription(lua_State *L);
-
+	
 	//get tile info
 	static int luaActionGetTilePzInfo(lua_State *L);
-
+	
+    static int luaActionGetTileHouseInfo(lua_State *L);
+	
 	//get player info functions
 	static int luaActionGetPlayerFood(lua_State *L);
 	static int luaActionGetPlayerAccess(lua_State *L);
@@ -195,30 +230,38 @@ public:
 	static int luaActionGetPlayerMana(lua_State *L);
 	static int luaActionGetPlayerHealth(lua_State *L);
 	static int luaActionGetPlayerName(lua_State *L);
-	static int luaActionGetPlayerPosition(lua_State *L);
+	static int luaActionGetPlayerPosition(lua_State *L);	
 	static int luaActionGetPlayerSkill(lua_State *L);
 	static int luaActionGetPlayerVocation(lua_State *L);
 	static int luaActionGetPlayerMasterPos(lua_State *L);
 	static int luaActionGetPlayerGuildId(lua_State *L);
-
+	
 	static int luaActionGetPlayerStorageValue(lua_State *L);
 	static int luaActionSetPlayerStorageValue(lua_State *L);
-
+#ifdef MOVE_PLAYER
+static int luaActionDoMovePlayer(lua_State *L);
+#endif //MOVE_PLAYER
+#ifdef GET_SLOT
+static int luaActionDoGetSlotItem(lua_State *L);
+#endif //GET_SLOT
+#ifdef GET_ITEM
+static int luaActionGetPlayerItem(lua_State *L);
+#endif //GET_ITEM	
 #ifdef YUR_ACT_EXT
 	static int luaActionGetItemName(lua_State *L);
 #endif //YUR_ACT_EXT
-
-protected:
-
+	
+protected:			
+	
 	Game *game;
 	Player *_player;
 	unsigned int lastuid;
-
+	
 	friend class Action;
-
+	
 	std::map<unsigned int,KnownThing*> ThingMap;
 	static std::map<unsigned int,KnownThing*> uniqueIdMap;
-
+	
 	//lua related functions
 	int registerFunctions();
 	bool loaded;
@@ -229,10 +272,10 @@ protected:
 	static unsigned long internalGetNumber(lua_State *L);
 	static const char* internalGetString(lua_State *L);
 	static void internalAddThing(lua_State *L, const Thing *thing, const unsigned int thingid);
-
+	
 	static Position internalGetRealPosition(ActionScript *action, Player *player, const Position &pos);
 	static int internalGetPlayerInfo(lua_State *L, ePlayerInfo info);
-
+	
 };
 
 #endif // __actions_h_

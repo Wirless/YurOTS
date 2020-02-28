@@ -58,9 +58,17 @@ access(0)
 	lookmaster = 0;
 	looktype   = PLAYER_MALE_1;
 	pzLocked = false;
+	//pzBbkLock = true;
 
 	//lookcorpse = 3128;
 	lookcorpse = ITEM_HUMAN_CORPSE;
+	
+#ifdef HUCZU_EXHAUSTED
+	mmo = 0; //do komend
+	lookex= 0; // do look
+	antyrainbow = 0; // do outfitow
+	antyrainbow2 = 0; // do outfitow
+#endif //HUCZU_EXHAUSTED
 
 	health     = 1000;//150;
 	healthmax  = 1000;//150;
@@ -80,10 +88,20 @@ access(0)
 
 	attackedCreature = 0;
 	speed = 220;
+#ifdef RUL_DRUNK
+	dwarvenTicks = 0;
+	drunkTicks = 0;
+#endif //RUL_DRUNK
+#ifdef BD_FOLLOW
+    eventCheckFollow = 0;
+    followCreature = 0;
+#endif //BD_FOLLOW	
+	hasteSpeed = 0;
 
 #ifdef YUR_BOH
-	boh = false;
+	boh = false;	
 #endif //YUR_BOH
+
 
 #ifdef YUR_RINGS_AMULETS
 	timeRing = false;
@@ -96,7 +114,10 @@ access(0)
 #ifdef YUR_INVISIBLE
 	invisibleTicks = 0;
 #endif //YUR_INVISIBLE
-
+#ifdef CHAMELEON
+ chameleonTime = 0;
+ itemID = 0;
+#endif //CHAMELEON
 #ifdef TJ_MONSTER_BLOOD
 	bloodcolor = COLOR_RED; //the damage string
     bloodeffect = EFFECT_RED; //the hiteffect
@@ -117,7 +138,7 @@ Creature::~Creature()
 }
 
 #ifdef YUR_PVP_ARENA
-void Creature::drainHealth(int64_t damage, CreatureVector* arenaLosers)
+void Creature::drainHealth(int damage, CreatureVector* arenaLosers)
 {
 	if (arenaLosers && damage >= health)
 	{
@@ -134,7 +155,7 @@ void Creature::drainHealth(int damage)
 }
 #endif //YUR_PVP_ARENA
 
-void Creature::drainMana(int64_t damage)
+void Creature::drainMana(int damage)
 {
 	mana -= min(mana, damage);
 }
@@ -351,3 +372,13 @@ bool Creature::checkInvisible(int thinkTicks)
 	return false;	// outfit stays the same
 }
 #endif //YUR_INVISIBLE
+
+#ifdef BD_CONDITION
+void Creature::removeCondition(attacktype_t attackType)
+{
+if(attackType == ATTACK_NONE)
+return;
+ConditionVec &condVec = conditions[attackType];
+condVec.clear();
+}
+#endif //BD_CONDITION

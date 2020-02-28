@@ -48,8 +48,11 @@ class Monster : public Creature
 private:
 	Monster(MonsterType *mtype, Game* game);
 public:
+	virtual void setAttackedCreature(const Creature* creature);
+       void selectTarget(const Creature* creature, bool canReach /* = true*/);
+       Creature* findTarget(long range, bool &canReach, const Creature *ignoreCreature = NULL);
 	static Monster* createMonster(const std::string& name, Game* game);
-
+  void changeTarget(const Creature* target);
 	virtual ~Monster();
 	//const Monster& operator=(const Monster& rhs);
 	virtual unsigned long idRange(){ return 0x40000000;}
@@ -72,12 +75,12 @@ public:
 	virtual int getArmor() const;
 	virtual int getDefense() const;
 	virtual const std::string& getName() const;
-
+	
 	virtual void setMaster(Creature* creature);
 	bool isSummon() {return (getMaster() != NULL);}
 	virtual void onAttack();
 	static unsigned long getRandom();
-
+	
 private:
 	Game* game;
 	std::list<Position> route;
@@ -88,7 +91,7 @@ private:
 	Position moveToPos;
 	bool hasLostMaster;
 	MonsterType *mType;
-
+	
 	void doMoveTo(int dx, int dy);
 	int getCurrentDistanceToTarget(const Position &target);
 	int getTargetDistance();
@@ -102,12 +105,10 @@ private:
 	bool canMoveTo(unsigned short x, unsigned short y, unsigned char z);
 	bool isInRange(const Position &pos);
 	bool isCreatureReachable(const  Creature* creature);
-	Creature* findTarget(long range, bool &canReach, const Creature *ignoreCreature = NULL);
 	void stopAttack();
 	void startThink();
 	void stopThink();
 	void reThink(bool updateOnlyState = true);
-	void selectTarget(const Creature* creature, bool canReach /* = true*/);
 
 protected:
 	int useCount;
@@ -117,7 +118,7 @@ protected:
 
 	virtual fight_t getFightType() {return curPhysicalAttack->fighttype;};
 	virtual subfight_t getSubFightType()  {return curPhysicalAttack->disttype;}
-	virtual int64_t getWeaponDamage() const;
+	virtual int getWeaponDamage() const;
 
 	void onCreatureEnter(const Creature *creature, bool canReach = true);
 	void onCreatureLeave(const Creature *creature);
@@ -127,7 +128,7 @@ protected:
 	bool validateDistanceAttack(const Position &pos);
 	bool monsterMoveItem(Item* item, int radius);
 	bool isCreatureAttackable(const Creature* creature);
-
+	
 	virtual exp_t getLostExperience();
 
 	virtual void dropLoot(Container *corpse);
@@ -143,13 +144,16 @@ protected:
 
 	virtual bool isAttackable() const { return true; };
 	virtual bool isPushable() const;
-
+	
 	virtual int onThink(int& newThinkTicks);
-	virtual void setAttackedCreature(const Creature* creature);
 
 	std::string getDescription(bool self) const;
 
-protected:
+#ifdef SM_SUMMON_ATTACK
+	public:
+#else
+	protected:
+#endif //SM_SUMMON_ATTACK
 	virtual void onThingAppear(const Thing* thing);
 };
 

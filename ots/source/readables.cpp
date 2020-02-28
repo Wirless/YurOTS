@@ -73,13 +73,13 @@ bool Readables::Load(Game *game)
 					item->setReadable(text);
 				else
 				{
-					std::cout << "\nTop thing at " << Position(x,y,z) << " is not an item!";
+					std::cout << "\nPrzedmiot na top'ie " << Position(x,y,z) << " nie jest itemem!";
 					return false;
 				}
 			}
 			else
 			{
-				std::cout << "\nTile " << Position(x,y,z) << " is not valid!";
+				std::cout << "\nPosadzka " << Position(x,y,z) << " nie jest wlasciwa!";
 				return false;
 			}
 		}

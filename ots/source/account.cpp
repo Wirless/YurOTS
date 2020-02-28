@@ -9,8 +9,6 @@
 Account::Account()
 {
 	accnumber = 0;
-	accType = 0;
-	premDays = 90;
 }
 
 Account::~Account()

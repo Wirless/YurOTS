@@ -104,6 +104,11 @@ public:
 	bool isDoor;
 #endif //TLM_HOUSE_SYSTEM
 #ifdef YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+    int reqLevel;
+#endif //PALL_REQ_LVL
+
 	int newCharges;
 	int newTime;
 #endif //YUR_RINGS_AMULETS

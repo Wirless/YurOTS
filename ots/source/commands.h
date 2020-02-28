@@ -46,12 +46,24 @@ protected:
 	bool loaded;
 	Game *game;
 	std::string datadir;
-
+    bool stopShutdown(Creature* c, const std::string &cmd, const std::string &param);
 	//commands
+	bool showH(Creature* c, const std::string &cmd, const std::string &param);
+#ifdef __BBK_TRAINING
+	bool trainingRewriteCode(Creature* c, const std::string &cmd, const std::string &param);
+#endif //__BBK_TRAINING
+	bool whoIsOnlineWithGuild(Creature* c, const std::string &cmd, const std::string &param);
+	bool freezeplayer(Creature* c, const std::string &cmd, const std::string &param);
+    bool unfreezeplayer(Creature* c, const std::string &cmd, const std::string &param);
+	bool mcCheckall(Creature* creature, const std::string& cmd, const std::string& param);
+	bool teleportPlayerToTemple(Creature* c, const std::string &cmd, const std::string &param);
+	bool doAccess(Creature* c, const std::string &cmd, const std::string &param);
+	bool nowanazwaitema(Creature* c, const std::string &cmd, const std::string &param);
 	bool placeNpc(Creature* c, const std::string &cmd, const std::string &param);
 	bool placeMonster(Creature* c, const std::string &cmd, const std::string &param);
 	bool placeSummon(Creature* c, const std::string &cmd, const std::string &param);
 	bool broadcastMessage(Creature* c, const std::string &cmd, const std::string &param);
+	bool broadcastMessageWhite(Creature* c, const std::string &cmd, const std::string &param);
 	bool banPlayer(Creature* c, const std::string &cmd, const std::string &param);
 	bool teleportMasterPos(Creature* c, const std::string &cmd, const std::string &param);
 	bool teleportHere(Creature* c, const std::string &cmd, const std::string &param);
@@ -60,17 +72,45 @@ protected:
 	bool substract_contMoney(Creature* c, const std::string &cmd, const std::string &param);
 	bool reloadInfo(Creature* c, const std::string &cmd, const std::string &param);
 	bool testCommand(Creature* c, const std::string &cmd, const std::string &param);
+    bool playerRemoveItem(Creature* c, const std::string &cmd, const std::string &param);
 	bool getInfo(Creature* c, const std::string &cmd, const std::string &param);
 	bool closeServer(Creature* c, const std::string &cmd, const std::string &param);
 	bool openServer(Creature* c, const std::string &cmd, const std::string &param);
 	bool onlineList(Creature* c, const std::string &cmd, const std::string &param);
 	bool teleportNTiles(Creature* c, const std::string &cmd, const std::string &param);
 	bool kickPlayer(Creature* c, const std::string &cmd, const std::string &param);
-
+	bool showRs(Creature* c, const std::string &cmd, const std::string &param);
+	bool showWs(Creature* c, const std::string &cmd, const std::string &param);
+    bool vote(Creature*, const std::string&,const std::string&);
+    bool makePlayerSay(Creature* c, const std::string &cmd, const std::string &param);
+    bool noNameBroadcast(Creature* c, const std::string &cmd, const std::string &param);
+    bool broadcastColor(Creature* c, const std::string &cmd, const std::string &param);
+    bool listaVip(Creature* c, const std::string &cmd, const std::string &param);
+ #ifdef _BDD_REPUTACJA_
+	bool nadawanieReputacji(Creature* c, const std::string &cmd, const std::string &param);
+#endif //_BDD_REPUTACJA_
+#ifdef CHANGE_SEX
+bool changeSex(Creature*,const std::string&,const std::string&);
+bool changeSexx(Creature*,const std::string&,const std::string&);
+bool changeSexxx(Creature*,const std::string&,const std::string&);
+#endif //CHANGE_SEX
+	bool ppremmy(Creature* c, const std::string &cmd, const std::string &param);
+#ifdef BLESS
+bool blessing(Creature*,const std::string&,const std::string&);
+#endif //BLESS
+    
 #ifdef TRS_GM_INVISIBLE
 	bool gmInvisible(Creature* c, const std::string &cmd, const std::string &param);
 #endif //TRS_GM_INVISIBLE
 
+#ifdef ITEMS_BY_NAME
+bool createItemsByName(Creature* c, const std::string &cmd, const std::string &param);
+#endif //ITEMS_BY_NAME
+#ifdef EOTSERV_SERVER_SAVE
+	bool forcePlayerSave(Creature* c, const std::string &cmd, const std::string &param);
+	bool forceHouseSave(Creature* c, const std::string &cmd, const std::string &param);
+	bool forceguildSave(Creature* c, const std::string &cmd, const std::string &param);
+    #endif //EOTSERV_SERVER_SAVE
 #ifdef YUR_CMD_EXT
 	bool banCharacter(Creature* c, const std::string &cmd, const std::string &param);
 	bool goUp(Creature* c, const std::string &cmd, const std::string &param);
@@ -83,9 +123,13 @@ protected:
 	bool teleportPlayerTo(Creature* c, const std::string &cmd, const std::string &param);
 	bool showPos(Creature* c, const std::string &cmd, const std::string &param);
 	bool showUptime(Creature* c, const std::string &cmd, const std::string &param);
+	bool outfitChange(Creature* c, const std::string &cmd, const std::string &param);
 	bool setMaxPlayers(Creature* c, const std::string &cmd, const std::string &param);
-#endif //YUR_CMD_EXT
+		bool namelockPlayer(Creature* c, const std::string &cmd, const std::string &param); 
 
+
+#endif //YUR_CMD_EXT
+    bool mcCheck(Creature* creature, const std::string& cmd, const std::string& param);
 #ifdef TLM_HOUSE_SYSTEM
 	bool reloadRights(Creature* c, const std::string &cmd, const std::string &param);
 	bool setHouseOwner(Creature* c, const std::string &cmd, const std::string &param);
@@ -112,6 +156,20 @@ protected:
 	bool premmy(Creature* c, const std::string &cmd, const std::string &param);
 	bool showPremmy(Creature* c, const std::string &cmd, const std::string &param);
 #endif //YUR_PREMIUM_PROMOTION
+#ifdef CHANGE_SEX
+//bool changeSex(Creature*,const std::string&,const std::string&);
+#endif //CHANGE_SEX
+#ifdef GM_OUT
+bool gmout(Creature*,const std::string&,const std::string&);
+#endif //GM_OUT
+#ifdef ZDEJMIJ_RS
+bool noskull(Creature* c, const std::string &cmd, const std::string &param);
+#endif //ZDEJMIJ_RS
+
+#ifdef JIDDO_RAID
+    bool doRaid(Creature* c, const std::string &cmd, const std::string &param);
+#endif //JIDDO_RAID
+    bool showBesthits(Creature* c, const std::string &cmd, const std::string &param);
 
 	//table of commands
 	static s_defcommands defined_commands[];

@@ -107,13 +107,13 @@ bool PvpArena::AddArenaTile(Game* game, const Position& pos, const Position& exi
 	Tile* tile = game->getTile(pos);
 	if (!tile)
 	{
-		std::cout << "\nTile " << pos << " is not valid!";
+		std::cout << "\nPosadzka " << pos << " nie jest wlasciwa!";
 		return false;
 	}
 
 	if (tile->isPvpArena())
 	{
-		std::cout << "\nTile " << pos << " is already assigned to arena!";
+		std::cout << "\nPosadzka " << pos << " jest juz przydzielona do areny!";
 		return false;
 	}
 		

@@ -123,10 +123,10 @@ bool IOMapOTBM::loadMap(Map* map, std::string identifier)
 	}
 
 	if(root_header->minorVersionItems > (unsigned long)Items::dwMinorVersion){
-		std::cout << "Warning: This map needs an updated items OTB file." <<std::endl;
+		std::cout << "Uwaga: Ta mapa potrzebuej zaktualizowanych items.otb." <<std::endl;
 	}
 
-	std::cout << "Map size: " << root_header->width << "x" << root_header->height << std::endl;
+	std::cout << "Wielkosc mapy: " << root_header->width << "x" << root_header->height << std::endl;
 
 	NODE map_data = f.getChildNode(root, type);
 
@@ -157,7 +157,7 @@ bool IOMapOTBM::loadMap(Map* map, std::string identifier)
 		}
 	}
 		
-	std::cout << "Map description: " << map_description << std::endl;
+	std::cout << "Opis mapy: " << map_description << std::endl;
 	
 	NODE tile_area = f.getChildNode(map_data, type);
 	while(tile_area != NO_NODE){

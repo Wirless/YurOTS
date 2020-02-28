@@ -51,11 +51,18 @@ private:
 	DoorOwnersMap doorOwners;
 
 public:
+       #ifdef BUY_HOUSE
+       std::string getName() const;
+ bool isBought();
+ static int getHouseSQM(std::string housename);
+ int checkHouseCount(Player* player);
+ #endif //BUY_HOUSE
 	std::vector<Position> tiles;
 	House(std::string name);
 	bool load();	
 	bool save();
 
+    long getLastUse() const { return lastUse; };
 	std::string getOwner() const;
 	std::string getSubOwners() const;
 	std::string getDoorOwners(const Position& pos) const;
@@ -85,6 +92,7 @@ private:
 public:
 	static bool Load(Game* game);
 	static bool Save(Game* game);
+	static bool RemoveHouseItems(Game* game, const std::string housename, Player* player);
 };
 
 #endif //HOUSES_H

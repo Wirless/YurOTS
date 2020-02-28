@@ -7,7 +7,7 @@
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -24,7 +24,11 @@
 
 
 bool fileExists(char* filename);
-int64_t random_range(int64_t lowest_number, int64_t highest_number);
+#ifdef TIJN_WILDCARD
+bool hasWildcard(const std::string &text);
+std::string getPlayerName(const std::string &name);
+#endif //TIJN_WILDCARD
+int random_range(int lowest_number, int highest_number);
 void hexdump(unsigned char *_data, int _len);
 char upchar(char c);
 void upper(char *upstr, char *str);
@@ -32,9 +36,6 @@ void upper(char *upstr, char *str, int n);
 int safe_atoi(const char* str);
 double timer();
 std::string article(const std::string& name);
-std::string tickstr(int ticks);
-std::string str(int32_t  value);
-std::string str(uint32_t value);
-std::string str(int64_t value);
-std::string str(uint64_t value);
+std::string str(int ticks);
+
 #endif

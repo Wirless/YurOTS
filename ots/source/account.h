@@ -7,7 +7,7 @@
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -37,9 +37,14 @@ public:
   Account();
   ~Account();
 
-  uint32_t accnumber;
+  unsigned long accnumber;
   int accType;     // ?
   int premDays;    // Premium days
+  
+#ifdef DT_PREMMY
+int lastsaveday;
+int lastsaveday2;
+#endif //DT_PREMMY
 
   std::string name;
   std::string password;

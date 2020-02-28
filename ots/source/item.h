@@ -46,11 +46,21 @@ protected:
 	unsigned short uniqueId;
 	std::string *specialDescription;
 	std::string *text;	//text written
-
+#ifdef SMYG_GETWRITER
+    std::string *writer; //Last person that wrote
+#endif //SMYG_GETWRITER
+//bbkowner
+    std::string *owner; 
+    int *ownerTime;
 #ifdef YUR_RINGS_AMULETS
 	int time;
 	int charges;
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+    int reqLevel;
+#endif //PALL_REQ_LVL
+
 #ifdef YUR_READABLES
 	std::string *readable;
 #endif //YUR_READABLES
@@ -59,6 +69,19 @@ private:
 	int useCount;
 
 public:
+#ifdef PARCEL_FLOOR       
+       bool isZItem();
+#endif //PARCEL_FLOOR  
+#ifdef SMYG_GETWRITER
+std::string Item::getWriter();
+void setWriter(std::string name);
+#endif //SMYG_GETWRITER
+//bbkowner
+std::string Item::getOwner();
+void setOwner(std::string name);
+int Item::getOwnerTime();
+void setOwnerTime(int time);
+
 	static Item* CreateItem(const unsigned short _type, unsigned short _count = 0); //Factory member to create item of right type based on type
 	static Items items;
 
@@ -85,6 +108,8 @@ public:
 	bool isSplash() const;
 	bool isNotMoveable() const;
 	bool isPickupable() const;
+//bbkowner
+	bool getOwner() const;
 	bool isWeapon() const;
 	bool isUseable() const;
 
@@ -102,6 +127,11 @@ public:
 	 void setGlimmer();
 	 void removeGlimmer();
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+     int getReqLevel() const { return reqLevel; }
+#endif //PALL_REQ_LVL
+
 #ifdef YUR_READABLES
 	 void setReadable(const std::string& text) { readable = new std::string(text); }
 #endif //YUR_READABLES
@@ -111,6 +141,9 @@ public:
 #ifdef YUR_CLEAN_MAP
 	 bool decoration;
 #endif //YUR_CLEAN_MAP
+#ifdef HUCZU_LOOT_INFO
+    virtual std::string getLootDescription() const;
+#endif //HUCZU_LOOT_INFO
 
 	virtual std::string getDescription(bool fullDescription) const;
 	std::string getName() const ;
@@ -149,7 +182,9 @@ public:
 	 */
 	virtual Item* decay();
 	bool isDecaying;
-
+#ifdef TLM_BEDS    
+    bool isBed(); 
+#endif //TLM_BEDS  
 	bool rotate();
 
   // Constructor for items

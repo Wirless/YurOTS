@@ -103,11 +103,11 @@ int Map::loadMap(std::string filename, std::string filekind) {
 	}
 	#endif
 	else{
- 		std::cout << "FATAL: couldnt determine the map format! exiting1" << std::endl;
+ 		std::cout << "FATALNY: nie mgoe okreslic formatu mapy! exiting1" << std::endl;
 		exit(1);
 	}
 
-	std::cout << ":: Loading map from: " << loader->getSourceDescription() << std::endl;
+	std::cout << ":: Laduje mape z: " << loader->getSourceDescription() << std::endl;
 	bool success = loader->loadMap(this, filename);
 	delete loader;
 
@@ -195,11 +195,19 @@ bool Map::placeCreature(Position &pos, Creature* c)
 		for(int cx =pos.x - 1; cx <= pos.x + 1 && !success; cx++) {
 			for(int cy = pos.y - 1; cy <= pos.y + 1 && !success; cy++){
 #ifdef __DEBUG__
-				std::cout << "search pos x: " << cx <<" y: "<< cy << std::endl;
+				std::cout << "szukaj pozycji x: " << cx <<" y: "<< cy << std::endl;
 #endif
 
 				tile = getTile(cx, cy, pos.z);
 				success = tile && !tile->floorChange() && !tile->getTeleportItem() && c->canMovedTo(tile);
+				
+#ifdef TR_PLACE_CREATURE_FIX
+Monster *m = dynamic_cast<Monster*>(c);
+                if(m){
+                   if(tile && tile->isPz())
+                      success = false;
+                }
+#endif //TR_PLACE_CREATURE_FIX
 
 #ifdef TLM_HOUSE_SYSTEM
 				if (success && p && p->access < g_config.ACCESS_HOUSE && tile->isHouse() &&
@@ -230,7 +238,7 @@ bool Map::placeCreature(Position &pos, Creature* c)
 
 	if(!success || !tile) {
 #ifdef __DEBUG__
-	std::cout << "Failed to place creature onto map!" << std::endl;
+	std::cout << "Nieudane umieszczenie potwora na mapie!" << std::endl;
 #endif
 		return false;
 	}
@@ -392,7 +400,160 @@ ReturnValue Map::isPathValid(Creature *creature, const std::list<Position>& path
 	return RET_NOERROR;
 	//return true;
 }
+std::list<Position> Map::getPathToEx(Creature *creature, Position start, Position to,
+bool creaturesBlock /*=true*/, bool ignoreMoveableBlockingItems /*= false*/, int maxNodSize /*= 100*/){
+std::list<Position> path;
 
+AStarNodes nodes;
+AStarNode* found = NULL;
+int z = start.z;
+
+AStarNode* startNode = nodes.createOpenNode();
+startNode->parent = NULL;
+startNode->h = 0;
+startNode->x = start.x;
+startNode->y = start.y;
+
+while(!found && nodes.countClosedNodes() < (unsigned long)maxNodSize){
+AStarNode* current = nodes.getBestNode();
+if(!current)
+return path; 
+
+nodes.closeNode(current);
+
+for(int dx=-1; dx <= 1; dx++){
+for(int dy=-1; dy <= 1; dy++){   
+if(1 == 1/*std::abs(dx) != std::abs(dy)*/){
+
+int x = current->x + dx;
+int y = current->y + dy;
+
+if(dx == -1 && dy == -1)
+{
+Tile *ctest1 = getTile(x+1, y, z); 
+Tile *ctest2 = getTile(x, y+1, z);
+if(ctest1 && ctest2) {
+
+ReturnValue ctest1er = ctest1->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+ReturnValue ctest2er = ctest2->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+
+if(ctest1er == RET_CREATUREBLOCK && ctest1->getCreature() == creature && ctest1->creatures.size() == 1)
+ctest1er = RET_NOERROR;
+if(ctest2er == RET_CREATUREBLOCK && ctest2->getCreature() == creature && ctest2->creatures.size() == 1)
+ctest2er = RET_NOERROR;
+
+if(ctest1er == RET_NOERROR || ctest2er == RET_NOERROR) {
+continue;
+}
+} 
+
+}
+
+if(dx == 1 && dy == -1)
+{
+Tile *ctest1 = getTile(x-1, y, z); 
+Tile *ctest2 = getTile(x, y+1, z);
+if(ctest1 && ctest2) {
+
+ReturnValue ctest1er = ctest1->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+ReturnValue ctest2er = ctest2->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+
+if(ctest1er == RET_CREATUREBLOCK && ctest1->getCreature() == creature && ctest1->creatures.size() == 1)
+ctest1er = RET_NOERROR;
+if(ctest2er == RET_CREATUREBLOCK && ctest2->getCreature() == creature && ctest2->creatures.size() == 1)
+ctest2er = RET_NOERROR;
+
+if(ctest1er == RET_NOERROR || ctest2er == RET_NOERROR) {
+continue;
+}
+} 
+
+}
+
+if(dx == 1 && dy == 1)
+{
+Tile *ctest1 = getTile(x-1, y, z); 
+Tile *ctest2 = getTile(x, y-1, z);
+if(ctest1 && ctest2) {
+
+ReturnValue ctest1er = ctest1->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+ReturnValue ctest2er = ctest2->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+
+if(ctest1er == RET_CREATUREBLOCK && ctest1->getCreature() == creature && ctest1->creatures.size() == 1)
+ctest1er = RET_NOERROR;
+if(ctest2er == RET_CREATUREBLOCK && ctest2->getCreature() == creature && ctest2->creatures.size() == 1)
+ctest2er = RET_NOERROR;
+
+if(ctest1er == RET_NOERROR || ctest2er == RET_NOERROR) {
+continue;
+}
+} 
+
+}
+
+if(dx == -1 && dy == 1)
+{
+Tile *ctest1 = getTile(x-1, y, z); 
+Tile *ctest2 = getTile(x, y+1, z);
+if(ctest1 && ctest2) {
+
+ReturnValue ctest1er = ctest1->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+ReturnValue ctest2er = ctest2->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+
+if(ctest1er == RET_CREATUREBLOCK && ctest1->getCreature() == creature && ctest1->creatures.size() == 1)
+ctest1er = RET_NOERROR;
+if(ctest2er == RET_CREATUREBLOCK && ctest2->getCreature() == creature && ctest2->creatures.size() == 1)
+ctest2er = RET_NOERROR;
+
+if(ctest1er == RET_NOERROR || ctest2er == RET_NOERROR) {
+continue;
+}
+} 
+
+}
+
+Tile *t = getTile(x, y, z);
+if(t) {
+ReturnValue ret = t->isBlocking(BLOCK_SOLID | BLOCK_PATHFIND, !creaturesBlock, ignoreMoveableBlockingItems);
+if(ret == RET_CREATUREBLOCK && t->getCreature() == creature && t->creatures.size() == 1)
+ret = RET_NOERROR;
+
+if(ret != RET_NOERROR) {
+continue;
+}
+}
+else
+continue;
+
+if(!nodes.isInList(x,y)){
+AStarNode* n = nodes.createOpenNode();
+if(n){
+n->x = x;
+n->y = y;
+n->h = abs(n->x - to.x)*abs(n->x - to.x) + abs(n->y - to.y)*abs(n->y - to.y);
+n->parent = current;
+if(x == to.x && y == to.y){
+found = n;
+}
+}
+}
+
+}
+}
+}
+}
+
+while(found){
+Position p;
+p.x = found->x;
+p.y = found->y;
+p.z = z;
+path.push_front(p);
+found = found->parent;
+}
+
+return path;
+}
 std::list<Position> Map::getPathTo(Creature *creature, Position start, Position to,
 	bool creaturesBlock /*=true*/, bool ignoreMoveableBlockingItems /*= false*/, int maxNodSize /*= 100*/){
 	std::list<Position> path;
@@ -579,3 +740,5 @@ long Map::clean()
 	return count;
 }
 #endif //YUR_CLEAN_MAP
+
+

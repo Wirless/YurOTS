@@ -11,7 +11,7 @@ bool IOMapBin::loadMap(Map* map, std::string identifier)
 	fh = fopen(identifier.c_str() ,"rb"); 
 	if (!fh)
 	{
-		std::cout << "ERROR: Failed to open " <<  identifier.c_str() << "!" << std::endl;
+		std::cout << "BLAD: Nie moge otworzyc " <<  identifier.c_str() << "!" << std::endl;
 		exit(1);
 	}
 
@@ -24,14 +24,14 @@ bool IOMapBin::loadMap(Map* map, std::string identifier)
 	if (strcmp(str, "OTM") != 0)
 	{
 		std::cout << str << std::endl;
-		std::cout << "ERROR: Not a OpenTibia Map file (wrong header)!!!" << std::endl;
+		std::cout << "BLAD: Not a OpenTibia Map file (wrong header)!!!" << std::endl;
 		fclose(fh); 
 		exit(1);
 	}
 
 	if (fgetc(fh) != 1)
 	{
-		std::cout << "ERROR: Wrong byte operator, revision byte expected!!! (old map revision?)" << std::endl;
+		std::cout << "BLAD: Wrong byte operator, revision byte expected!!! (old map revision?)" << std::endl;
 		fclose(fh); 
 		exit(1);
 	}
@@ -43,15 +43,15 @@ bool IOMapBin::loadMap(Map* map, std::string identifier)
 
 	if (revmajor != 1)
 	{
-		std::cout << "ERROR: Wrong map revision for this OTM file (might be 1.x.x)!!!" << std::endl;
+		std::cout << "BLAD: Wrong map revision for this OTM file (might be 1.x.x)!!!" << std::endl;
 		fclose(fh); 
 		exit(1);
 	}
 
 	if (revminor > 1 || revnum > 2)
-		std::cout << "WARNING: This is a newer map revision format. Check for the lastest editors to get the new functions" << std::endl;
+		std::cout << "UWAGA: This is a newer map revision format. Poszukaj najnowszych edytorow, aby uzywac nowych funkcji" << std::endl;
 	
-	std::cout << ":: Loaded map OTM: " << identifier.c_str() << std::endl;
+	std::cout << ":: Zaladowalem mape OTM: " << identifier.c_str() << std::endl;
 	loadOTM(map);
 
 	return true;
@@ -77,14 +77,14 @@ void IOMapBin::loadOTM(Map* map)
 				for (pos = 0; pos < len; pos++)
 					name[pos] = fgetc(fh);
 				name[pos] = '\0';
-				std::cout << ":: Map Name: " << name << std::endl;
+				std::cout << ":: Nazwa mapy: " << name << std::endl;
 				
 				// Map Author
 				len = fgetc(fh);
 				for (pos = 0; pos < len; pos++)
 					author[pos] = fgetc(fh);
 				author[pos] = '\0';
-				std::cout << ":: Map Author: " << author << std::endl;
+				std::cout << ":: Autor mapy: " << author << std::endl;
 				
 				
 			} break;
@@ -97,7 +97,7 @@ void IOMapBin::loadOTM(Map* map)
 				height += fgetc(fh)<<8;
 				map->mapwidth = width;
 				map->mapheight = height;
-				std::cout << ":: Map dimensions: " << width << "x" << height << std::endl;
+				std::cout << ":: Wymiar mapy: " << width << "x" << height << std::endl;
 			} break; 
 			case 0x30: // Global Temple Position
 			{
@@ -111,7 +111,7 @@ void IOMapBin::loadOTM(Map* map)
 				int radius = fgetc(fh);						// Radius
 
 				// TODO: use the temple point and radius
-				std::cout << ":: Global Temple Position: " << templePos.x << " " << templePos.y << " " << templePos.z << " Radius: " << radius << std::endl;
+				std::cout << ":: Globalna pozycja temple: " << templePos.x << " " << templePos.y << " " << templePos.z << " Zasieg: " << radius << std::endl;
 			} break; 
 			case 0x40: // Tiles and items
 			{
@@ -225,7 +225,7 @@ void IOMapBin::loadOTM(Map* map)
 												break;
 											default: // Unknow/New operators
 											{
-												printf("WARNING: Unknown operator loading items: 0x%X!\n",op3);
+												printf("UWAGA: Nieznany operator ladowania przedmiotow: 0x%X!\n",op3);
 												int len = fgetc(fh);
 												for (int i = 0; i < len; i++)
 													fgetc(fh);     
@@ -247,7 +247,7 @@ void IOMapBin::loadOTM(Map* map)
 								break;
 							default: // Unknow/New operators
 							{
-								printf("WARNING: Unknown operator loading tiles: 0x%X!\n",op2);
+								printf("UWAGA: Nieznany operator ladowania kratek: 0x%X!\n",op2);
 								int len = fgetc(fh);
 								for (int i = 0;i < len; i++)
 									fgetc(fh);  
@@ -255,7 +255,7 @@ void IOMapBin::loadOTM(Map* map)
 						}
 					} while (op2 < 0xFF);
 				}
-				std::cout << ":: Total of tiles loaded is " << total << std::endl;
+				std::cout << ":: Oglona liczba zaladowanych kratek " << total << std::endl;
 			} break;
 			case 0x50: // Spawns
 			{
@@ -299,7 +299,7 @@ void IOMapBin::loadOTM(Map* map)
 					fgetc(fh); // 1 = check for players near, 0 = dont check
 				}
 		           
-				std::cout << ":: Loaded spawns: " << total << std::endl;
+				std::cout << ":: Zaladowalem spawny: " << total << std::endl;
 				SpawnManager::instance()->startup();
 			} break;
 			case 0xF0:

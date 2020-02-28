@@ -7,7 +7,7 @@
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -25,34 +25,77 @@
 #include <cmath>
 #include <sstream>
 
+#include "definitions.h"
+#include <libxml/xmlmemory.h>
+#include <libxml/parser.h>
+
 bool fileExists(char* filename)
 {
-#ifdef USING_VISUAL_2005
-	FILE *f = NULL;
-	fopen_s(&f, filename, "rb");
-#else
 	FILE *f = fopen(filename, "rb");
-#endif //USING_VISUAL_2005
-
 	bool exists = (f != NULL);
 	if (f != NULL)
 		fclose(f);
 
 	return exists;
 }
+#ifdef TIJN_WILDCARD
+//has wildcard
+bool hasWildcard(const std::string &text) 
+{
+    if(text[text.length()-1] == '~') {
+        return true;
+    }
+    return false;
+}
 
+std::string getPlayerName(const std::string &name) {
+	if(name.length() < 2 || name.length() > 20) {
+        return std::string("");
+    }
+    
+    std::string filename = "data/players/" + name + ".xml";
+	std::transform(filename.begin(), filename.end(), filename.begin(), (int(*)(int))tolower);
+
+	xmlDocPtr doc;	
+	doc = xmlParseFile(filename.c_str());
+
+    std::string real_name = std::string("");
+
+	if(doc)
+	{
+		xmlNodePtr root;
+		char* nodeValue = NULL;
+		root = xmlDocGetRootElement(doc);
+
+		if(xmlStrcmp(root->name,(const xmlChar*) "player")) {
+			xmlFreeDoc(doc);
+            return real_name;
+		}
+
+        nodeValue = (char*)xmlGetProp(root, (const xmlChar *) "name");
+		if(nodeValue) {
+		    real_name = std::string(nodeValue);
+		    xmlFreeOTSERV(nodeValue);
+        }
+        
+		xmlFreeDoc(doc);
+    }
+    
+    return real_name;
+}
+#endif //TIJN_WILDCARD
 //////////////////////////////////////////////////
 // get a random value between lowest_number and highest_number
-int64_t random_range(int64_t lowest_number, int64_t highest_number)
+int random_range(int lowest_number, int highest_number)
 {
 	if(lowest_number > highest_number){
-		int64_t nTmp = highest_number;
+		int nTmp = highest_number;
 		highest_number = lowest_number;
 		lowest_number = nTmp;
     }
 
     double range = highest_number - lowest_number + 1;
-    return lowest_number + int64_t(range * rand()/(RAND_MAX + 1.0));
+    return lowest_number + int(range * rand()/(RAND_MAX + 1.0));
 }
 
 //////////////////////////////////////////////////
@@ -190,21 +233,13 @@ double timer()
 
 	if (!running)
 	{
-#ifdef USING_VISUAL_2005
-		_ftime_s(&start);
-#else
 		_ftime(&start);
-#endif //USING_VISUAL_2005
 		running = true;
 		return 0.0;
 	}
 	else
 	{
-#ifdef USING_VISUAL_2005
-		_ftime_s(&end);
-#else
 		_ftime(&end);
-#endif //USING_VISUAL_2005
 		running = false;
 		return (end.time-start.time)+(end.millitm-start.millitm)/1000.0;
 	}
@@ -228,7 +263,7 @@ std::string article(const std::string& name)
 	}
 }
 
-std::string tickstr(int ticks)
+std::string str(int ticks)
 {
 	int hours = (int)floor(double(ticks)/(3600000.0));
 	int minutes = (int)ceil((double(ticks) - double(hours)*3600000.0)/(60000.0));
@@ -236,56 +271,4 @@ std::string tickstr(int ticks)
 	std::ostringstream info;
 	info << hours << (hours==1? " hour " : " hours ") << minutes << (minutes==1? " minute" :" minutes");
 	return info.str();
-}
-
-
-std::string str(int32_t value)
-{
-	char buf[64];
-#ifdef USING_VISUAL_2005
-	if (_ltoa_s(value, buf, sizeof(buf), 10) == 0)
-		return buf;
-	else
-		return "";
-#else
-	return ltoa(value, buf, 10);
-#endif //USING_VISUAL_2005
-}
-
-std::string str(uint32_t value)
-{
-	char buf[64];
-#ifdef USING_VISUAL_2005
-	if (_ultoa_s(value, buf, sizeof(buf), 10) == 0)
-		return buf;
-	else
-		return "";
-#else
-	return _ultoa(value, buf, 10);
-#endif //USING_VISUAL_2005
-}
-
-std::string str(int64_t value)
-{
-	char buf[128];
-#ifdef USING_VISUAL_2005
-	if (_i64toa_s(value, buf, sizeof(buf), 10) == 0)
-		return buf;
-	else
-		return "";
-#else
-	return _i64toa(value, buf, 10);
-#endif //USING_VISUAL_2005
-}
-std::string str(uint64_t value)
-{
-	char buf[128];
-#ifdef USING_VISUAL_2005
-	if (_i64toa_s(value, buf, sizeof(buf), 10) == 0)
-		return buf;
-	else
-		return "";
-#else
-	return _ui64toa(value, buf, 10);
-#endif //USING_VISUAL_2005
 }

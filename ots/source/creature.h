@@ -7,7 +7,7 @@
 // modify it under the terms of the GNU General Public License
 // as published by the Free Software Foundation; either version 2
 // of the License, or (at your option) any later version.
-//
+// 
 // This program is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -35,7 +35,7 @@
 extern LuaScript g_config;
 
 #ifdef YUR_HIGH_LEVELS
-typedef int64_t exp_t;
+typedef __int64 exp_t;
 #else
 typedef unsigned long exp_t;
 #endif //YUR_HIGH_LEVELS
@@ -58,11 +58,22 @@ enum slots_t {
 	SLOT_DEPOT=11
 };
 
+#ifdef CAYAN_POISONMELEE
+enum fight_t {
+	FIGHT_MELEE,
+	FIGHT_POISON_MELEE,	
+	FIGHT_FIRE_MELEE,	
+  	FIGHT_ENERGY_MELEE,		
+	FIGHT_DIST,
+	FIGHT_MAGICDIST
+};
+#else
 enum fight_t {
 	FIGHT_MELEE,
 	FIGHT_DIST,
 	FIGHT_MAGICDIST
 };
+#endif //CAYAN_POISONMELEE
 
 // Macros
 #define CREATURE_SET_OUTFIT(c, type, head, body, legs, feet) c->looktype = type; \
@@ -80,6 +91,8 @@ enum playerLooks
 	PLAYER_MALE_5=0x84,
 	PLAYER_MALE_6=0x85,
 	PLAYER_MALE_7=0x86,
+	PLAYER_MALE_8=0xA0,
+    PLAYER_MALE_9=0x90,
 	PLAYER_FEMALE_1=0x88,
 	PLAYER_FEMALE_2=0x89,
 	PLAYER_FEMALE_3=0x8A,
@@ -87,6 +100,10 @@ enum playerLooks
 	PLAYER_FEMALE_5=0x8C,
 	PLAYER_FEMALE_6=0x8D,
 	PLAYER_FEMALE_7=0x8E,
+    PLAYER_FEMALE_8=0xA0,
+    PLAYER_FEMALE_9=0x90,
+    PLAYER_NIMF_1=0x90,
+    PLAYER_DWARF_1=0xA0,
 };
 
 
@@ -107,32 +124,41 @@ public:
 		if(condIt != this->end() && !condIt->second.empty()) {
 			return true;
 		}
-
+		
 		return false;
 	}
 };
 
 
 //////////////////////////////////////////////////////////////////////
-// Defines the Base class for all creatures and base functions which
+// Defines the Base class for all creatures and base functions which 
 // every creature has
 
 class Creature : public AutoID, public Thing
 {
 public:
+#ifdef YUR_INVISIBLE
+	int invisibleTicks;
+#endif //YUR_INVISIBLE
+//#ifdef CAYAN_POISONMELEE
+     Conditions conditions;   
+//#endif //CAYAN_POISONMELEE
 	//Creature(const std::string& name);
 	Creature();
 	virtual ~Creature();
-
+#ifdef CHAMELEON
+	unsigned short itemID;
+    unsigned short getItemId() const { return itemID; }
+	#endif //CHAMELEON
 	virtual const std::string& getName() const = 0;
-
+	
 	void setID(){this->id = auto_id | this->idRange();}
 	virtual unsigned long idRange() = 0;
 	unsigned long getID() const { return id; }
 	virtual void removeList() = 0;
 	virtual void addList() = 0;
 
-	exp_t getExpForLv(const int& lv) const {
+	exp_t getExpForLv(const int& lv) const { 
 #ifdef YUR_HIGH_LEVELS
 		exp_t x = lv;
 		return ((50*x/3 - 100)*x + 850/3)*x - 200;
@@ -143,14 +169,14 @@ public:
 
 	Direction getDirection() const { return direction; }
 	void setDirection(Direction dir) { direction = dir; }
-
+	
 	virtual fight_t getFightType(){return FIGHT_MELEE;};
 	virtual subfight_t getSubFightType() {return DIST_NONE;}
 	virtual Item* getDistItem() {return NULL;};
 	virtual void removeDistItem(){return;}
 	virtual int getImmunities() const
 	{
-		if(access >= g_config.ACCESS_PROTECT)
+		if(access >= g_config.ACCESS_PROTECT) 
 			return  ATTACK_ENERGY | ATTACK_BURST | ATTACK_FIRE |
 			ATTACK_PHYSICAL | ATTACK_POISON | ATTACK_PARALYZE | ATTACK_DRUNKNESS;
 		else
@@ -158,24 +184,24 @@ public:
 	};
 
 #ifdef YUR_PVP_ARENA
-	virtual void drainHealth(int64_t, CreatureVector* arenaLosers);
+	virtual void drainHealth(int, CreatureVector* arenaLosers);
 #else
 	virtual void drainHealth(int);
 #endif //YUR_PVP_ARENA
 
-	virtual void drainMana(int64_t);
+	virtual void drainMana(int);
 	virtual void die(){};
 	virtual std::string getDescription(bool self = false) const;
 	virtual void setAttackedCreature(const Creature* creature);
 	//virtual void setAttackedCreature(unsigned long id);
-
+	
 	virtual void setMaster(Creature* creature);
 	virtual Creature* getMaster() {return master;}
-
+	
 	virtual void addSummon(Creature *creature);
 	virtual void removeSummon(Creature *creature);
-
-	virtual int64_t getWeaponDamage() const {
+	
+	virtual int getWeaponDamage() const {
 		return 1+(int)(10.0*rand()/(RAND_MAX+1.0));
 	}
 	virtual int getArmor() const {
@@ -184,33 +210,51 @@ public:
 	virtual int getDefense() const {
 		return 0;
 	}
-
+	
 	unsigned long attackedCreature;
-
+	#ifdef CHAMELEON
+    //Charmeleon by Black Demon
+    unsigned short itemid;
+    long chameleonTime;
+    //end
+#endif //CHAMELEON
+	#ifdef BD_FOLLOW
+unsigned long followCreature;
+std::list<Position> pathList;
+unsigned long eventCheckFollow;
+#endif //BD_FOLLOW
+	
 	virtual bool isAttackable() const { return true; };
 	virtual bool isPushable() const {return true;}
 	virtual void dropLoot(Container *corpse) {return;};
 	virtual int getLookCorpse() {return lookcorpse;};
-
+	
 	//  virtual int sendInventory(){return 0;};
 	virtual int addItemInventory(Item* item, int pos){return 0;};
 	virtual Item* getItem(int pos){return NULL;}
 	virtual Direction getDirection(){return direction;}
 	void addCondition(const CreatureCondition& condition, bool refresh);
 	Conditions& getConditions() {return conditions;};
-
+#ifdef BD_CONDITION
+            void removeCondition(attacktype_t attackType);
+#endif //BD_CONDITION
+	
 	int lookhead, lookbody, looklegs, lookfeet, looktype, lookcorpse, lookmaster;
-	int64_t mana, manamax, manaspent;
+	int mana, manamax, manaspent;
 	bool pzLocked;
-
+	//bool pzBbkLock;
+	
 	long inFightTicks, exhaustedTicks;
 	long manaShieldTicks, hasteTicks, paralyzeTicks;
+#ifdef RUL_DRUNK
+    long drunkTicks, dwarvenTicks;
+#endif //RUL_DRUNK
 	int immunities;
-
+	
 	//unsigned long experience;
 	Position masterPos;
-
-	int64_t health, healthmax;
+	
+	int health, healthmax;
 	uint64_t lastmove;
 
 #ifdef TJ_MONSTER_BLOOD
@@ -218,55 +262,72 @@ public:
     unsigned char bloodeffect;
     unsigned char bloodsplash;
 #endif //TJ_MONSTER_BLOOD
-
+	
 	long long getSleepTicks() const;
 	int getStepDuration() const;
-
-	unsigned short getSpeed() const {
+	
+	unsigned short getSpeed() const {            
 		return speed;
 	};
-
+	
 	void setNormalSpeed()
 	{
 		if(access >= g_config.ACCESS_PROTECT){
-			speed = 1000;
-			return;
+			speed = 1700;     
+			return;    
 		}
 		speed = getNormalSpeed();
 	}
 
 	int getNormalSpeed()
 	{
-		if(access >= g_config.ACCESS_PROTECT){
-			return 1000;
+		if(access >= g_config.ACCESS_PROTECT){     
+			return 1700;    
 		}
-#ifdef YUR_BOH
-	#ifdef YUR_RINGS_AMULETS
-		return std::min(900, 220 + (2* (level + 30*boh + 30*timeRing - 1)));
-	#else //YUR_RINGS_AMULETS
-		return std::min(900, 220 + (2* (level + 30*boh - 1)));
-	#endif //YUR_RINGS_AMULETS
-#else //YUR_BOH
-	#ifdef YUR_RINGS_AMULETS
-		return std::min(900, 220 + (2* (level + 30*timeRing - 1)));
-	#else //YUR_RINGS_AMULETS
-		return std::min(900, 220 + (2* (level - 1)));
-	#endif //YUR_RINGS_AMULETS
-#endif //YUR_BOH
-	}
 
+
+
+#ifdef YUR_BOH
+
+        #ifdef YUR_RINGS_AMULETS
+	    	return 220 + (2* (level + 30*boh + 30*timeRing - 1)); 
+    	#else //YUR_RINGS_AMULETS
+     		return 220 + (2* (level + 30*boh - 1)); 
+    	#endif //YUR_RINGS_AMULETS
+	
+#else //YUR_BOH
+    	#ifdef YUR_RINGS_AMULETS
+	    	return 220 + (2* (level + 30*timeRing - 1)); 
+    	#else //YUR_RINGS_AMULETS
+	    	return 220 + (2* (level - 1)); 
+    	#endif //YUR_RINGS_AMULETS
+#endif //YUR_BOH
+
+	}
+	
 	int access;		//access level
-	int64_t maglevel;	// magic level
+	int maglevel;	// magic level
 	int level;		// level
 	int speed;
+#ifdef BLESS
+int bless;
+int blessa, blessb, blessc, blessd, blesse;
+#endif //BLESS
+	int hasteSpeed;
+#ifdef HUCZU_EXHAUSTED	
+    long mmo;
+    long lookex;
+    long antyrainbow;
+    long antyrainbow2;
+#endif //HUCZU_EXHAUSTED
 
 	Direction direction;
-
+	
 	virtual bool canMovedTo(const Tile *tile) const;
-
+	
 	virtual void sendCancel(const char *msg) const { };
 	virtual void sendCancelWalk(const char *msg) const { };
-
+	
 	virtual void addInflictedDamage(Creature* attacker, int damage);
 	virtual exp_t getGainedExperience(Creature* attacker);
 	virtual std::vector<long> getInflicatedDamageCreatureList();
@@ -288,34 +349,33 @@ public:
 	bool checkInvisible(int thinkTicks);
 #endif //YUR_INVISIBLE
 
-protected:
-
 #ifdef YUR_BOH
 	bool boh;
 #endif //YUR_BOH
+
+ 
+ 
 #ifdef YUR_RINGS_AMULETS
 	bool timeRing;
-#endif //YUR_RINGS_AMULETS
-#ifdef YUR_INVISIBLE
-	int invisibleTicks;
-#endif //YUR_INVISIBLE
+#endif //YUR_RINGS_AMULETS	
+protected:
 
 	unsigned long eventCheck;
 	unsigned long eventCheckAttacking;
 
 	Creature *master;
 	std::list<Creature*> summons;
-
-	Conditions conditions;
+	
+//	Conditions conditions;
 	typedef std::vector< std::pair<uint64_t, long> > DamageList;
 	typedef std::map<long, DamageList > TotalDamageList;
 	TotalDamageList totaldamagelist;
-
+	
 protected:
 	virtual int onThink(int& newThinkTicks){newThinkTicks = 300; return 300;};
 	virtual void onThingMove(const Creature *player, const Thing *thing, const Position *oldPos,
 		unsigned char oldstackpos, unsigned char oldcount, unsigned char count) { };
-
+	
 	virtual void onCreatureAppear(const Creature *creature) { };
 	virtual void onCreatureDisappear(const Creature *creature, unsigned char stackPos, bool tele = false) { };
 	virtual void onThingDisappear(const Thing* thing, unsigned char stackPos) = 0;
@@ -323,50 +383,54 @@ protected:
 	virtual void onThingAppear(const Thing* thing) = 0;
 	virtual void onCreatureTurn(const Creature *creature, unsigned char stackPos) { };
 	virtual void onCreatureSay(const Creature *creature, SpeakClasses type, const std::string &text) { };
-
+	
 	virtual void onCreatureChangeOutfit(const Creature* creature) { };
 	virtual void onTileUpdated(const Position &pos) { };
-
+	
 	virtual void onTeleport(const Creature *creature, const Position *oldPos, unsigned char oldstackpos) { };
-
+	
+#ifdef MOVE_UP
+    virtual void onThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
+  const Item* fromItem, Container *toContainer) {};
+#endif //MOVE_UP
 	//container to container
 	virtual void onThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
 		const Item* fromItem, int oldFromCount, Container *toContainer, unsigned char to_slotid,
 		const Item *toItem, int oldToCount, int count) {};
-
+	
 	//inventory to container
 	virtual void onThingMove(const Creature *creature, slots_t fromSlot, const Item* fromItem,
 		int oldFromCount, const Container *toContainer, unsigned char to_slotid, const Item *toItem, int oldToCount, int count) {};
-
+	
 	//inventory to inventory
 	virtual void onThingMove(const Creature *creature, slots_t fromSlot, const Item* fromItem,
 		int oldFromCount, slots_t toSlot, const Item* toItem, int oldToCount, int count) {};
-
+	
 	//container to inventory
 	virtual void onThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
 		const Item* fromItem, int oldFromCount, slots_t toSlot, const Item *toItem, int oldToCount, int count) {};
-
+	
 	//container to ground
 	virtual void onThingMove(const Creature *creature, const Container *fromContainer, unsigned char from_slotid,
 		const Item* fromItem, int oldFromCount, const Position &toPos, const Item *toItem, int oldToCount, int count) {};
-
+	
 	//inventory to ground
 	virtual void onThingMove(const Creature *creature, slots_t fromSlot,
 		const Item* fromItem, int oldFromCount, const Position &toPos, const Item *toItem, int oldToCount, int count) {};
-
+	
 	//ground to container
 	virtual void onThingMove(const Creature *creature, const Position &fromPos, int stackpos, const Item* fromItem,
 		int oldFromCount, const Container *toContainer, unsigned char to_slotid, const Item *toItem, int oldToCount, int count) {};
-
+	
 	//ground to inventory
 	virtual void onThingMove(const Creature *creature, const Position &fromPos, int stackpos, const Item* fromItem,
 		int oldFromCount, slots_t toSlot, const Item *toItem, int oldToCount, int count) {};
-
+	
 	friend class Game;
 	friend class Map;
 	friend class Commands;
 	friend class GameState;
-
+	
 	unsigned long id;
 	//std::string name;
 };

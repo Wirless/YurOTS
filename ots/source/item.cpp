@@ -135,12 +135,23 @@ Item::Item(const unsigned short _type) {
 	isDecaying  = 0;
 	specialDescription = NULL;
 	text = NULL;
+	#ifdef SMYG_GETWRITER
+	writer = NULL;
+    #endif //SMYG_GETWRITER
+//bbkowner
+    owner = NULL;
+    ownerTime = 0;
 
 #ifdef YUR_RINGS_AMULETS
 	const ItemType& it = items[id];
 	time = it.newTime;
 	charges = it.newCharges;
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+    reqLevel = it.reqLevel;
+#endif //PALL_REQ_LVL
+
 #ifdef YUR_READABLES
 	readable = NULL;
 #endif //YUR_READABLES
@@ -170,12 +181,23 @@ Item::Item(const Item &i){
 	}
 	else{
 		text = NULL;
+		#ifdef SMYG_GETWRITER
+	writer = NULL;
+    #endif //SMYG_GETWRITER
+ //bbkowner
+    owner = NULL;
+    ownerTime = 0;
 	}
 
 #ifdef YUR_RINGS_AMULETS
 	time = i.time;
 	charges = i.charges;
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+    reqLevel = i.reqLevel;
+#endif //PALL_REQ_LVL
+
 #ifdef YUR_READABLES
 	if (i.readable)
 		readable = new std::string(*(i.readable));
@@ -248,6 +270,13 @@ Item::Item(const unsigned short _type, unsigned short _count) {
 	isDecaying  = 0;
 	specialDescription = NULL;
 	text = NULL;
+	#ifdef SMYG_GETWRITER
+	writer = NULL;
+    #endif //SMYG_GETWRITER
+//bbkowner
+    owner = NULL;
+    ownerTime = 0;
+
 	setItemCountOrSubtype((unsigned char)_count);
 	/*
 	if(isStackable()){
@@ -273,6 +302,11 @@ Item::Item(const unsigned short _type, unsigned short _count) {
 	time = it.newTime;
 	charges = it.newCharges;
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+    reqLevel = it.reqLevel;
+#endif //PALL_REQ_LVL
+
 #ifdef YUR_READABLES
 	readable = NULL;
 #endif //YUR_READABLES
@@ -294,11 +328,22 @@ Item::Item()
 	uniqueId = 0;
 	specialDescription = NULL;
 	text = NULL;
+	#ifdef SMYG_GETWRITER
+	writer = NULL;
+    #endif //SMYG_GETWRITER
+//bbkowner
+    owner = NULL;
+    ownerTime = 0;
 
 #ifdef YUR_RINGS_AMULETS
 	time = 0;
 	charges = 0;
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+    reqLevel = 0;
+#endif //PALL_REQ_LVL
+
 #ifdef YUR_READABLES
 	readable = NULL;
 #endif //YUR_READABLES
@@ -392,6 +437,14 @@ int Item::unserialize(xmlNodePtr p){
 	}
 #endif //YUR_RINGS_AMULETS
 
+#ifdef PALL_REQ_LVL
+    tmp = (char*)xmlGetProp(p, (const xmlChar *) "reqLevel");
+    if(tmp){
+        reqLevel = atoi(tmp);
+        xmlFreeOTSERV(tmp);
+    }
+#endif //PALL_REQ_LVL
+
 	return 0;
 }
 
@@ -413,6 +466,32 @@ xmlNodePtr Item::serialize(){
 		s.str(""); //empty the stringstream
 		s << *text;
 		xmlSetProp(ret, (const xmlChar*)"text", (const xmlChar*)s.str().c_str());
+	}
+
+	#ifdef SMYG_GETWRITER
+		if(writer && text){ //No need to save if text is empty..
+		s.str(""); //empty the stringstream
+		s << *writer;
+		xmlSetProp(ret, (const xmlChar*)"writer", (const xmlChar*)s.str().c_str());
+	}
+	#else
+		if(text){
+		s.str(""); //empty the stringstream
+		s << *text;
+		xmlSetProp(ret, (const xmlChar*)"text", (const xmlChar*)s.str().c_str());
+	}
+#endif //SMYG_GETWRITER
+
+//bbkowner
+		if(owner){ //No need to save if text is empty..
+		s.str(""); //empty the stringstream
+		s << *owner;
+		xmlSetProp(ret, (const xmlChar*)"owner", (const xmlChar*)s.str().c_str());
+	}
+		if(ownerTime){ //No need to save if text is empty..
+		s.str(""); //empty the stringstream
+		s << *ownerTime;
+		xmlSetProp(ret, (const xmlChar*)"ownerTime", (const xmlChar*)s.str().c_str());
 	}
 
 	s.str(""); //empty the stringstream
@@ -446,6 +525,14 @@ xmlNodePtr Item::serialize(){
 		xmlSetProp(ret, (const xmlChar*)"time", (const xmlChar*)s.str().c_str());
 	}
 #endif //YUR_RINGS_AMULETS
+
+#ifdef PALL_REQ_LVL
+    s.str("");
+    if(reqLevel != 0){
+        s << reqLevel;
+        xmlSetProp(ret, (const xmlChar*)"reqLevel", (const xmlChar*)s.str().c_str());
+    }
+#endif //PALL_REQ_LVL
 
 	return ret;
 }
@@ -553,6 +640,53 @@ double Item::getWeight() const {
 
 	return items[id].weight;
 }
+#ifdef HUCZU_LOOT_INFO
+std::string Item::getLootDescription() const
+{
+    std::stringstream s;
+	std::string str;
+	const Container* container;
+	const ItemType& it = items[id];
+	
+      if(specialDescription){
+         s << (*specialDescription);
+         }
+      else if(it.name.length()) {
+		     if(isStackable() && count > 1) {
+			   s << (int)count << " " << it.name << "s";
+      }else {
+	  if(isWeapon() && (getAttack() || getDefense()))
+	  {
+			 s << article(it.name) << " (Atk:" << (int)getAttack() << " Def:" << (int)getDefense() << ")";
+	  }
+      else if(getArmor())
+	  {
+			 s << article(it.name) << " (Arm:"<< (int)getArmor() << ")";
+      }
+      else if(isSplash()){
+		     s << article(it.name) << " of ";
+			if(fluid == 0){
+			 s << items[1].name;
+			}else{
+			 s << items[fluid].name;
+			  if(fluid == 5)
+				s << " Posiada " << actionId << " uzyc";
+			}
+	  }
+	  else if(it.isKey()){
+			 s << article(it.name) << " (Key:" << actionId << ")";
+	  }
+	  else if(it.isContainer() && (container = dynamic_cast<const Container*>(this))) {
+			 s << article(it.name) << " (Vol:" << container->capacity() << ")";
+   	  }else{
+			 s << article(it.name);
+      }
+    }
+  }
+   	str = s.str();
+	return str;
+}
+#endif //HUCZU_LOOT_INFO
 
 std::string Item::getDescription(bool fullDescription) const
 {
@@ -566,7 +700,7 @@ std::string Item::getDescription(bool fullDescription) const
 
 		if(fullDescription) {
 			if(it.weight > 0)
-				s << std::endl << "It weighs " << std::fixed << std::setprecision(1) << it.weight << " oz.";
+				s << std::endl << "To wazy " << std::fixed << std::setprecision(1) << it.weight << " oz.";
 		}
 	}
 	else if (it.name.length()) {
@@ -574,15 +708,15 @@ std::string Item::getDescription(bool fullDescription) const
 			s << (int)count << " " << it.name << "s.";
 
 			if(fullDescription) {
-				s << std::endl << "They weight " << std::fixed << std::setprecision(1) << ((double) count * it.weight) << " oz.";
+				s << std::endl << "One waza " << std::fixed << std::setprecision(1) << ((double) count * it.weight) << " oz.";
 			}
 		}
 		else {
 			if(items[id].runeMagLevel != -1)
 			{
-				s << "a spell rune for level " << it.runeMagLevel << "." << std::endl;
+				s << " rune. Wymagany poziom magiczny do uzycia runy: " << it.runeMagLevel << "." << std::endl;
 
-				s << "It's an \"" << it.name << "\" spell (";
+				s << "Aby ja stworzyc wypowiedz slowa: \"" << it.name << "\" uzyc:(";
 				if(getItemCharge())
 					s << (int)getItemCharge();
 				else
@@ -591,16 +725,16 @@ std::string Item::getDescription(bool fullDescription) const
 			}
 			else if(isWeapon() && (getAttack() || getDefense()))
 			{
-				s << article(it.name) << " (Atk:" << (int)getAttack() << " Def:" << (int)getDefense() << ")";
+				s << article(it.name) << " (Atak:" << (int)getAttack() << " Obrona:" << (int)getDefense() << ")";
 			}
 			else if(getArmor())
 			{
-				s << article(it.name) << " (Arm:"<< (int)getArmor() << ")";
+				s << article(it.name) << " (Armor:"<< (int)getArmor() << ")";
 			}
 			else if(isFluidContainer()){
 				s << article(it.name);
 				if(fluid == 0){
-					s << ". It is empty";
+					s << ". To jest puste";
 				}
 				else{
 					s << " of " << items[fluid].name;
@@ -616,7 +750,7 @@ std::string Item::getDescription(bool fullDescription) const
 				}
 			}
 			else if(it.isKey()){
-				s << article(it.name) << " (Key:" << actionId << ")";
+				s << article(it.name) << " (Klucz:" << actionId << ")";
 			}
 			else if(it.isGroundTile()) //groundtile
 			{
@@ -627,24 +761,24 @@ std::string Item::getDescription(bool fullDescription) const
 			{
 				s << article(it.name) << ". ";
 				if (charges == 1)
-					s << "\nIt has 1 charge left";
+					s << "\nPozostal jeszcze 1 ladunek";
 				else
-					s << "\nIt has " << charges << " charges left";
+					s << "\nPozostalo " << charges << " ladunkow";
 			}
 			else if (time)
 			{
 				s << article(it.name) << ". ";
 				if (time < 60*1000)
-					s << "\nIt has less than a minute left";
+					s << "\nPozostalo mniej niz 1 minuta do wykorzystania";
 				else if (time == items[id].newTime)
-					s << "\nIt is brand new";
+					s << "\nTo jest nowy przedmiot";
 				else
-					s << "\nIt has " << (int)ceil(time/(60.0*1000.0)) << " minutes left";
+					s << "\nPozostalo " << (int)ceil(time/(60.0*1000.0)) << " minut do wykorzystania";
 			}
 #endif //YUR_RINGS_AMULETS
 
 			else if(it.isContainer() && (container = dynamic_cast<const Container*>(this))) {
-				s << article(it.name) << " (Vol:" << container->capacity() << ")";
+				s << article(it.name) << " (Pojemnosc: " << container->capacity() << ")";
 			}
 			else {
 				s << article(it.name);
@@ -653,9 +787,9 @@ std::string Item::getDescription(bool fullDescription) const
 				if (readable)
 				{
 					if (readable->empty())
-						s << "\nNothing is written on it";
+						s << "\nNic nie jest na tym napisane";
 					else
-						s << "\nYou read: " << *readable;
+						s << "\nCzytasz: " << *readable;
 				}
 #endif //YUR_READABLES
 			}
@@ -663,7 +797,7 @@ std::string Item::getDescription(bool fullDescription) const
 			if(fullDescription) {
 				double weight = getWeight();
 				if(weight > 0)
-					s << std::endl << "It weighs " << std::fixed << std::setprecision(1) << weight << " oz.";
+					s << std::endl << "To wazy " << std::fixed << std::setprecision(1) << weight << " oz.";
 
 				if(items[id].description.length())
 				{
@@ -673,7 +807,7 @@ std::string Item::getDescription(bool fullDescription) const
 		}
 	}
 	else
-		s<<"an item of type " << id <<".";
+		s<<"przedmiot typu " << id <<".";
 
 	str = s.str();
 	return str;
@@ -807,6 +941,8 @@ int Item::getWorth() const
 		return getItemCountOrSubtype() * 100;
 	case ITEM_COINS_CRYSTAL:
 		return getItemCountOrSubtype() * 10000;
+	case ITEM_COINS_SCARAB:
+		return getItemCountOrSubtype() * 1000000;
 	default:
 		return 0;
 	}
@@ -818,12 +954,15 @@ void Item::setGlimmer()
 	switch (getID())
 	{
 		case ITEM_TIME_RING: setID(ITEM_TIME_RING_IN_USE); break;
+		case ITEM_RING_OF_HEALING: setID(ITEM_RING_OF_HEALING_IN_USE); break; //Ring of healing   
+case ITEM_LIFE_RING: setID(ITEM_LIFE_RING_IN_USE); break; //Life Ring
 		case ITEM_SWORD_RING: setID(ITEM_SWORD_RING_IN_USE); break;
 		case ITEM_AXE_RING: setID(ITEM_AXE_RING_IN_USE); break;
 		case ITEM_CLUB_RING: setID(ITEM_CLUB_RING_IN_USE); break;
 		case ITEM_POWER_RING: setID(ITEM_POWER_RING_IN_USE); break;
 		case ITEM_ENERGY_RING: setID(ITEM_ENERGY_RING_IN_USE); break;
 		case ITEM_STEALTH_RING: setID(ITEM_STEALTH_RING_IN_USE); break;
+		case ITEM_DWARVEN_RING: setID(ITEM_DWARVEN_RING_IN_USE); break;
 	}
 }
 
@@ -838,6 +977,75 @@ void Item::removeGlimmer()
 		case ITEM_POWER_RING_IN_USE: setID(ITEM_POWER_RING); break;
 		case ITEM_ENERGY_RING_IN_USE: setID(ITEM_ENERGY_RING); break;
 		case ITEM_STEALTH_RING_IN_USE: setID(ITEM_STEALTH_RING); break;
+		case ITEM_RING_OF_HEALING_IN_USE: setID(ITEM_RING_OF_HEALING); break; //Ring of healing    
+        case ITEM_LIFE_RING_IN_USE: setID(ITEM_LIFE_RING); break; //Life Ring
+        case ITEM_DWARVEN_RING_IN_USE: setID(ITEM_DWARVEN_RING); break;
 	}
 }
 #endif //YUR_RINGS_AMULETS
+#ifdef PARCEL_FLOOR
+bool Item::isZItem()
+{
+    if(id >= 1646 && id <= 1661 || id >= 1666 && id <= 1677 || id >= 1694 && id <= 1709 || id >= 1738 && id <= 1741 || id == 2595 || id == 2596 || id >= 3813 && id <= 3820 || id >= 3901 && id <= 3938)
+        return true;
+    return false;
+}
+#endif //PARCEL_FLOOR
+#ifdef TLM_BEDS 
+bool Item::isBed() 
+{ 
+if(id == 1754 || id == 1755 || id == 1756 || id == 1757 || id == 1758 || id == 1759 || id == 1760 || id == 1761 || id == 1762 || id == 1763 || id == 1764 || id == 1765 || id == 1766 || id == 1767 || id == 1768 || id == 1769) 
+return true; 
+else return false; 
+} 
+#endif //TLM_BEDS  
+#ifdef SMYG_GETWRITER
+std::string Item::getWriter()
+{
+if(!writer)
+return std::string("");
+return *writer;
+}
+void Item::setWriter(std::string name){
+if(writer){
+delete writer;
+writer = NULL;
+}
+if(name.length() > 1){
+writer = new std::string(name); 
+}
+}
+
+#endif //SMYG_GETWRITER
+//bbkowner
+std::string Item::getOwner()
+{
+if(!owner)
+return std::string("");
+return *owner;
+}
+void Item::setOwner(std::string name){
+if(owner){
+delete owner;
+owner = NULL;
+}
+if(name.length() > 1){
+owner = new std::string(name); 
+}
+}
+
+int Item::getOwnerTime()
+{
+if(!ownerTime)
+return int("");
+return *ownerTime;
+}
+void Item::setOwnerTime(int time){
+if(ownerTime){
+delete ownerTime;
+ownerTime = NULL;
+}
+if(time > 1){
+ownerTime = new int(time); 
+}
+}

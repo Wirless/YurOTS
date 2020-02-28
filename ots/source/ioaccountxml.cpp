@@ -21,11 +21,9 @@
 #include "ioaccountxml.h"
 #include <algorithm>
 #include <functional>
-#include <iostream>
 #include <sstream>
 #include <string.h>
 #include "luascript.h"
-#include "tools.h"
 
 extern xmlMutexPtr xmlmutex;
 extern LuaScript g_config; 
@@ -41,7 +39,7 @@ Account IOAccountXML::loadAccount(unsigned long accno){
 
 	std::stringstream accsstr;
 	std::string datadir = g_config.getGlobalString("datadir");
-	accsstr << datadir + "accounts/" << accno << ".xml";
+	accsstr << datadir + "accounts/" << accno << ".xml";;
 	std::string filename = accsstr.str();
 	std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
 	xmlMutexLock(xmlmutex);
@@ -73,6 +71,20 @@ Account IOAccountXML::loadAccount(unsigned long accno){
 		nodeValue = (char*)xmlGetProp(root, (xmlChar*)"premDays");
 		acc.premDays  = atoi(nodeValue);
 		xmlFreeOTSERV(nodeValue);
+		
+#ifdef DT_PREMMY
+      nodeValue = (char*)xmlGetProp(root, (xmlChar*)"lastsaveday");
+        acc.lastsaveday  = atoi(nodeValue);
+        xmlFreeOTSERV(nodeValue);
+
+        struct tm * timeinfo;
+        time_t nowTime;
+        time(&nowTime);
+        timeinfo = localtime(&nowTime);
+        mktime(timeinfo);
+        acc.lastsaveday2 = timeinfo->tm_yday;
+
+#endif //DT_PREMMY
 
 		// now load in characters.
 		while (p)
@@ -178,49 +190,49 @@ bool IOAccountXML::getPassword(unsigned long accno, const std::string &name, std
 	xmlMutexUnlock(xmlmutex);
 	return false;
 }
-
-#ifdef YUR_BUILTIN_AAC
-bool IOAccountXML::saveAccount(const Account& account)
+#ifdef DT_PREMMY
+bool IOAccountXML::saveAccount(Account acc)
 {
-	xmlMutexLock(xmlmutex);
-	xmlNodePtr root, charsNode, charNode;
+    std::stringstream accsstr;
+    std::string datadir = g_config.getGlobalString("datadir");
+    accsstr << datadir + "accounts/" << acc.accnumber << ".xml";;
+    std::string filename = accsstr.str();
+    std::transform(filename.begin(), filename.end(), filename.begin(), tolower);
+    std::stringstream sb;
 
-	xmlDocPtr doc = xmlNewDoc((const xmlChar*)"1.0");
-	doc->children = xmlNewDocNode(doc, NULL, (const xmlChar*)"account", NULL);
+    xmlDocPtr doc;
+    xmlMutexLock(xmlmutex);
+    xmlNodePtr nn, sn, pn, root;
+    doc = xmlNewDoc((const xmlChar*)"1.0");
+    doc->children = xmlNewDocNode(doc, NULL, (const xmlChar*)"account", NULL);
     root = doc->children;
 
-	xmlSetProp(root, (const xmlChar*)"pass", (const xmlChar*)account.password.c_str());
-	xmlSetProp(root, (const xmlChar*)"type", (const xmlChar*)str(account.accType).c_str());
-	xmlSetProp(root, (const xmlChar*)"premDays", (const xmlChar*)str(account.premDays).c_str());
+    sb << acc.password;       xmlSetProp(root, (const xmlChar*) "pass",        (const xmlChar*)sb.str().c_str());     sb.str("");
+    sb << acc.accType;        xmlSetProp(root, (const xmlChar*) "type",        (const xmlChar*)sb.str().c_str());     sb.str("");
+    sb << acc.premDays;       xmlSetProp(root, (const xmlChar*) "premDays",    (const xmlChar*)sb.str().c_str());     sb.str("");
+    sb << acc.lastsaveday2;    xmlSetProp(root, (const xmlChar*) "lastsaveday", (const xmlChar*)sb.str().c_str());     sb.str("");
 
-	charsNode = xmlNewNode(NULL, (const xmlChar*)"characters");
-	xmlAddChild(root, charsNode);
+    sn = xmlNewNode(NULL,(const xmlChar*)"characters");
+    std::list<std::string>::iterator it;
+    for (it = acc.charList.begin(); it != acc.charList.end(); it++)
+    {
+        pn = xmlNewNode(NULL,(const xmlChar*)"character");
+        sb << (*it);       xmlSetProp(pn, (const xmlChar*) "name",     (const xmlChar*)sb.str().c_str());     sb.str("");
+        xmlAddChild(sn, pn);
+    }
+    xmlAddChild(root, sn);
 
-	std::list<std::string>::const_iterator iter = account.charList.begin();
-	while (iter != account.charList.end())
-	{
-		charNode = xmlNewNode(NULL, (const xmlChar*)"character");
-		xmlSetProp(charNode, (const xmlChar*)"name", (const xmlChar*)(*iter).c_str());
-		xmlAddChild(charsNode, charNode);
-		++iter;
-	}
-
-	std::ostringstream filename;
-	filename << g_config.DATA_DIR << "accounts/" << account.accnumber << ".xml";
-	std::string file = filename.str();
-
-	if (xmlSaveFile(file.c_str(), doc))
-	{
-		xmlFreeDoc(doc);
-		xmlMutexUnlock(xmlmutex);
-		return true;
-	}
-	else
-	{
-		xmlFreeDoc(doc);
-		xmlMutexUnlock(xmlmutex);
-		std::cout << "Failed to save " << file << std::endl;
-		return false;
-	}
+    if (xmlSaveFile(filename.c_str(), doc))
+    {
+        xmlFreeDoc(doc);
+        xmlMutexUnlock(xmlmutex);
+    }
+    else
+    {
+        //std::cout << "\tCouldn't save account =(\n";
+        xmlFreeDoc(doc);
+        xmlMutexUnlock(xmlmutex);
+        return false;
+    }
 }
-#endif //YUR_BUILTIN_AAC
+#endif //DT_PREMMY

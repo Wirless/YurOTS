@@ -26,6 +26,11 @@
 #include <sstream>
 #include <algorithm>
 #include <boost/tokenizer.hpp>
+#include "player.h"
+#include "ioplayer.h"
+
+#include "networkmessage.h"
+#include "protocol76.h"
 
 extern LuaScript g_config;
 extern xmlMutexPtr xmlmutex;
@@ -112,7 +117,7 @@ bool House::save()
 	tmp = xmlNewNode(NULL, (const xmlChar*)"owner");
 	xmlSetProp(tmp, (const xmlChar*)"name", (const xmlChar*)owner.c_str());
 	xmlAddChild(root, tmp);
-
+	
 	for (size_t i = 0; i < subOwners.size(); i++)
 	{
 		tmp = xmlNewNode(NULL, (const xmlChar*)"subowner");
@@ -188,12 +193,29 @@ Position House::getFrontDoor() const
 
 std::string House::getDescription() const
 {
+if(g_config.getGlobalString("buyhouse") == "yes")
+        {
+            long price = g_config.getGlobalNumber("priceforsqm", 0) * getHouseSQM(name);
 	std::stringstream doortext;
+	
+
+	if(owner.empty())
+			doortext << "You see a door.\n It belongs to house '" << name << "'.\n " << 
+		(owner.empty()? "Nobody" : owner) << " owns this house." << "The cost is " << price << " pieces of gold";	
+		else
+				doortext << "You see a door.\n It belongs to house '" << name << "'.\n " << 
+		(owner.empty()? "Nobody" : owner) << " owns this house.";
+		
+	return doortext.str();
+}
+else if(g_config.getGlobalString("buyhouse") == "no")
+{
+     std::stringstream doortext;
 	doortext << "You see a door.\n It belongs to house '" << name << "'.\n " << 
 		(owner.empty()? "Nobody" : owner) << " owns this house.";	
 	return doortext.str();
+	}
 }
-
 rights_t House::getPlayerRights(std::string nick)	// ignores door-owners
 {
 	rights_t rights = HOUSE_NONE;
@@ -424,7 +446,6 @@ bool Houses::LoadHouseItems(Game* game)
 								item->unserialize(itemNode);
 								item->pos = Position(x, y, z);
 								tile->addThing(item);
-
 								Container *container = dynamic_cast<Container*>(item);
 								if (container)
 									LoadContainer(itemNode, container);			
@@ -435,7 +456,6 @@ bool Houses::LoadHouseItems(Game* game)
 				}
 			}
 			tileNode = tileNode->next;
-
 		}
 		xmlFreeDoc(doc);
 		return true;
@@ -559,4 +579,290 @@ bool Houses::SaveContainer(xmlNodePtr nodeitem, Container* ccontainer)
 	}
 	return true;
 }
+
+#ifdef BUY_HOUSE
+int House::checkHouseCount(Player* player)
+{
+	std::string file = g_config.DATA_DIR + "houses.xml";
+	xmlDocPtr doc;
+	doc = xmlParseFile(file.c_str());
+    int housecount = 0;   
+    if (doc)
+	{
+		xmlNodePtr root, houseNode, tileNode;
+		root = xmlDocGetRootElement(doc);
+		if (xmlStrcmp(root->name, (const xmlChar*)"houses")) 
+		{
+			xmlFreeDoc(doc);
+		}
+
+		houseNode = root->children;
+		while (houseNode)
+		{
+			if (strcmp((char*) houseNode->name, "house") == 0)
+			{
+				std::string name = (const char*)xmlGetProp(houseNode, (const xmlChar *) "name");
+				House* house = new House(name);
+				if (!house->load())
+				{
+					xmlFreeDoc(doc);
+					return false;
+				}
+                if(player->getName() == house->getOwner()){
+                       housecount++;
+                }        
+
+			}
+			houseNode = houseNode->next;
+		}
+		xmlFreeDoc(doc);
+
+	}
+    return housecount;                     
+}
+
+std::string House::getName() const
+{
+ return name;
+}
+bool House::isBought()
+{
+ if(owner.empty())
+    return false;
+    else
+    return true;
+}
+int House::getHouseSQM(std::string housename) 
+{ 
+  std::string file="data/houses.xml";
+  xmlDocPtr doc;
+  doc = xmlParseFile(file.c_str());
+  int sqm = 0;
+  if (doc){
+   xmlNodePtr root, p, tile;
+   root = xmlDocGetRootElement(doc);
+   if (xmlStrcmp(root->name, (const xmlChar*)"houses")) {
+     xmlFreeDoc(doc);
+     return sqm;
+   }
+    p = root->children; 
+    while(p){ 
+      if (strcmp((char*) p->name, "house")==0){
+       std::string foundname =(const char*)xmlGetProp(p, (const xmlChar *) "name");
+        if (housename == foundname){
+          tile = p->children;
+          while(tile){      
+            if (strcmp((const char*) tile->name, "tile")==0){
+              sqm++;
+            } else if (strcmp((const char*) tile->name, "tiles") == 0)
+              {
+  int fromx = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "fromx"));
+  int fromy = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "fromy"));
+  int fromz = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "fromz"));
+  int tox = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "tox"));
+  int toy = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "toy"));
+  int toz = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "toz"));
+  if (fromx > tox) std::swap(fromx, tox);
+  if (fromy > toy) std::swap(fromy, toy);
+  if (fromz > toz) std::swap(fromz, toz);
+  for (int x = fromx; x <= tox; x++)
+   for (int y = fromy; y <= toy; y++)
+    for (int z = fromz; z <= toz; z++)
+                   sqm++;
+               }
+              tile = tile->next;
+          }
+        }
+      }
+      p = p->next;
+    }
+  }
+  return sqm;
+}
+#endif //BUY_HOUSE
+bool Houses::RemoveHouseItems(Game* game,const std::string housename, Player* player)
+{
+    //std::cout << "removing items from house" << std::endl;
+    Container *backpack1 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack2 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack3 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack4 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack5 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack6 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack7 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack8 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack9 = dynamic_cast<Container*>(Item::CreateItem(1988));
+    Container *backpack10 = dynamic_cast<Container*>(Item::CreateItem(1988));
+//   const unsigned char depotid = g_config.getGlobalString("housedepot") == "yes";
+  const unsigned char depotid = g_config.getGlobalNumber("housedepot",0);
+
+  std::string file="data/houses.xml";
+  xmlDocPtr doc;
+  xmlMutexLock(xmlmutex);
+  doc = xmlParseFile(file.c_str());
+
+  if (doc){
+   xmlNodePtr root, p, tile;
+   root = xmlDocGetRootElement(doc);
+   if (xmlStrcmp(root->name, (const xmlChar*)"houses")) {
+     xmlFreeDoc(doc);
+	 xmlMutexUnlock(xmlmutex);
+     return false;
+   }
+
+    p = root->children;
+    while(p){
+      if (strcmp((char*) p->name, "house")==0){
+       const std::string HName =(const char*)xmlGetProp(p, (const xmlChar *) "name");
+        if (housename == HName){
+          tile = p->children;
+          while(tile){
+            if (strcmp((const char*) tile->name, "tile")==0){
+        ///
+       for (size_t i = 0; i < houses.size(); i++)
+	   {
+		for (size_t j = 0; j < houses[i]->tiles.size(); j++)
+		{
+			Position& pos = houses[i]->tiles[j];
+			Tile *housetile = game->getTile(pos.x, pos.y, pos.z);
+			for (int i = housetile->getThingCount(); i >= 0; i--)
+			{
+				Item* item = dynamic_cast<Item*>(housetile->getThingByStackPos(i));
+				if (item && !item->isNotMoveable() && housetile && housetile->getHouse() && housetile->getHouse()->getOwner() == player->getName())
+                {
+                Container *checkdepot = player->getDepot((int)depotid);
+                if(backpack1->size() + 1 <= backpack1->capacity())
+                backpack1->addItem(item);
+                else if (backpack2->size() + 1 <= backpack2->capacity())
+                backpack2->addItem(item);
+                else if (backpack3->size() + 1 <= backpack3->capacity())
+                backpack3->addItem(item);
+                else if (backpack4->size() + 1 <= backpack4->capacity())
+                backpack4->addItem(item);
+                else if (backpack5->size() + 1 <= backpack5->capacity())
+                backpack5->addItem(item);
+                else if (backpack6->size() + 1 <= backpack6->capacity())
+                backpack6->addItem(item);
+                else if (backpack7->size() + 1 <= backpack7->capacity())
+                backpack7->addItem(item);
+                else if (backpack8->size() + 1 <= backpack8->capacity())
+                backpack8->addItem(item);
+                else if (backpack9->size() + 1 <= backpack9->capacity())
+                backpack9->addItem(item);
+                else if (backpack10->size() + 1 <= backpack10->capacity())
+                backpack10->addItem(item);
+                else
+                checkdepot->addItem(item);//add all items in depot
+                housetile->removeThing(item);//delete theys of the house
+                housetile->getHouse()->setDoorOwners("",pos);
+                housetile->getHouse()->setOwner("");
+                housetile->getHouse()->setSubOwners("");
+                housetile->getHouse()->setGuests("");
+                game->StackableUpdate(pos);
+                }
+            }
+            }
+        }
+        ////
+            } else if (strcmp((const char*) tile->name, "tiles") == 0)
+              {
+                int fromx = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "fromx"));
+                int fromy = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "fromy"));
+                int fromz = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "fromz"));
+                int tox = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "tox"));
+                int toy = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "toy"));
+                int toz = atoi((const char*) xmlGetProp(tile, (const xmlChar*) "toz"));
+                if (fromx > tox) std::swap(fromx, tox);
+                if (fromy > toy) std::swap(fromy, toy);
+                if (fromz > toz) std::swap(fromz, toz);
+                for (int x = fromx; x <= tox; x++){
+                for (int y = fromy; y <= toy; y++){
+                for (int z = fromz; z <= toz; z++){
+                   ///
+       for (size_t i = 0; i < houses.size(); i++)
+	   {
+		for (size_t j = 0; j < houses[i]->tiles.size(); j++)
+		{
+			Position& pos = houses[i]->tiles[j];
+			Tile *housetile = game->getTile(pos.x, pos.y, pos.z);
+            
+			for (int i = housetile->getThingCount(); i >= 0; i--)
+			{
+				Item* item = dynamic_cast<Item*>(housetile->getThingByStackPos(i));
+				if (item && !item->isNotMoveable() && housetile && housetile->getHouse() && housetile->getHouse()->getOwner() == player->getName())
+                {
+                Container *checkdepot = player->getDepot((int)depotid);
+                if(backpack1->size() + 1 <= backpack1->capacity())
+                backpack1->addItem(item);
+                else if (backpack2->size() + 1 <= backpack2->capacity())
+                backpack2->addItem(item);
+                else if (backpack3->size() + 1 <= backpack3->capacity())
+                backpack3->addItem(item);
+                else if (backpack4->size() + 1 <= backpack4->capacity())
+                backpack4->addItem(item);
+                else if (backpack5->size() + 1 <= backpack5->capacity())
+                backpack5->addItem(item);
+                else if (backpack6->size() + 1 <= backpack6->capacity())
+                backpack6->addItem(item);
+                else if (backpack7->size() + 1 <= backpack7->capacity())
+                backpack7->addItem(item);
+                else if (backpack8->size() + 1 <= backpack8->capacity())
+                backpack8->addItem(item);
+                else if (backpack9->size() + 1 <= backpack9->capacity())
+                backpack9->addItem(item);
+                else if (backpack10->size() + 1 <= backpack10->capacity())
+                backpack10->addItem(item);
+                else
+                checkdepot->addItem(item);//add all items in depot
+                housetile->removeThing(item);//delete theys of the house
+                housetile->getHouse()->setDoorOwners("",pos);
+                housetile->getHouse()->setOwner("");
+                housetile->getHouse()->setSubOwners("");
+                housetile->getHouse()->setGuests("");
+                //update
+                game->StackableUpdate(pos);
+                }
+            }
+            }
+        }
+        ////
+                }
+                }
+                }
+               }
+              tile = tile->next;
+          }
+        }
+      }
+      p = p->next;
+    }
+  }
+  Container *depot = player->getDepot((int)depotid);
+  if(backpack1->size() > 0)
+  depot->addItem(backpack1);
+  if(backpack2->size() > 0)
+  depot->addItem(backpack2);
+  if(backpack3->size() > 0)
+  depot->addItem(backpack3);
+  if(backpack4->size() > 0)
+  depot->addItem(backpack4);
+  if(backpack5->size() > 0)
+  depot->addItem(backpack5);
+  if(backpack6->size() > 0)
+  depot->addItem(backpack6);
+  if(backpack7->size() > 0)
+  depot->addItem(backpack7);
+  if(backpack8->size() > 0)
+  depot->addItem(backpack8);
+  if(backpack9->size() > 0)
+  depot->addItem(backpack9);
+  if(backpack10->size() > 0)
+  depot->addItem(backpack10);
+  //std::cout << "all items from house are now on depot of player" << std::endl;
+  IOPlayer::instance()->savePlayer(player);
+  xmlFreeDoc(doc);
+  xmlMutexUnlock(xmlmutex);
+  return true;
+}
 #endif //TLM_HOUSE_SYSTEM
+

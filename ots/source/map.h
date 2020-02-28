@@ -259,6 +259,8 @@ class Map {
 	  */
 	std::list<Position> getPathTo(Creature* creature, Position start, Position to,
 		bool creaturesBlock = true, bool ignoreMoveableBlockingItems = false, int maxNodSize = 100);
+	std::list<Position> getPathToEx(Creature* creature, Position start, Position to,
+        bool creaturesBlock = true, bool ignoreMoveableBlockingItems = false, int maxNodSize = 100);
 
 	
 	/* Map Width and Height - for Info purposes */
