@@ -1,0 +1,49 @@
+
+PARCEL_FLOOR - nie da sie zejsc
+sprawdzic parametry projektu, mozliwe ze niektore nie istnieja
+
+http://forum.otsoft.pl/showthread.php?t=19646
+
+
+
+http://forum.otsoft.pl/showthread.php?t=19108
+
+
+
+http://forum.otsoft.pl/showthread.php?t=18563
+http://forum.otsoft.pl/showthread.php?t=16553
+http://forum.otsoft.pl/showthread.php?t=236
+
+
+
+
+-DRUL_WALKTO
+
+-DANTY_DDOS
+-DCAYAN_SUMMONS
+
+
+lua_register(luaState, "getMarried", NpcScript::luagetMarried);
+
+
+BLESS
+
+
+
+
+
+
+
+
+Wyznaczenie nagrody za czyjeœ zabójstwo, jeœli go zabijesz to dostaniesz kasê jak¹ zaproponowa³ ten koleœ ;D 
+System Guild Hall, (Rozdzielanie pokoi)
+System Aukcji, 
+System p³ywania po wodzie ma³ymi ³ódkami, 
+Quest Book
+Spell Book
+Domki na klucz (na kluczu mo¿e pisaæ nazwe domku), a jak Ci klucz wyleci to strata "raz siê ¿yje", Jest ryzyko jest zabawa
+
+
+
+
+

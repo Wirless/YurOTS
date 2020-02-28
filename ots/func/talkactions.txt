@@ -1,0 +1,25 @@
+Teraz przyk³adowy skrypt:
+do actions.xml dodaj takie linijki:
+xml Kod:
+
+<talk word="!wordgm" access="3" script="talk.lua" />
+<talk word="!word" access="0" script="talk.lua" />
+
+
+Gdzie:
+Cytat:
+word = komenda
+access = minimalny access gracza który mo¿e u¿yæ komendy
+script = skrypt jaki ma zostaæ wykonany
+teraz w katalogu data/actions/scripts tworzymy plik talk.lua i wklejamy do niego:
+lua Kod:
+
+function onTalk(cid, word, param)
+    if(word == "!wordgm")then
+        doPlayerSendTextMessage(cid, 22, "Jestem komenda dla gm: " .. word .. " i mam taki parametr: " .. param)
+    elseif(word == "!word")then
+        doPlayerSendTextMessage(cid, 22, "Jestem komenda dla gracza: " .. word .. " i mam taki parametr: " .. param)
+    end
+    return 1
+end
+

@@ -1,0 +1,96 @@
+Teraz w katalogu data naszego ots tworzymy plik tasks.xml i umieszczamy w nim:
+xml Kod:
+
+<?xml version="1.0"?>
+<tasks>
+    <task name="Demon" storage="1111" count="5"/>
+    <task name="Hydra" storage="1112" count="10"/>
+</tasks>
+
+
+Gdzie:
+Cytat:
+name = Nazwie potwora jakiego ma zabijaæ gracz
+storage= StorageValue co tu du¿o gadaæ
+count = ile potworów mamy zabiæ
+Teraz prosty npc:
+lua Kod:
+
+local focus = 0
+local talk_start = 0
+local target = 0
+
+local config = {name="Hydra", storage=1112, count=10}
+
+function onThingMove(creature, thing, oldpos, oldstackpos) end
+function onCreatureAppear(creature) end
+
+function onCreatureDisappear(cid, pos)
+    if focus == cid then
+          selfSay('Good bye then.')
+          focus = 0
+          talk_start = 0
+    end
+end
+
+function onCreatureTurn(creature) end
+
+function msgcontains(txt, str)
+    return (string.find(txt, str) and not string.find(txt, '(%w+)' .. str) and not string.find(txt, str .. '(%w+)'))
+end
+
+function onCreatureSay(cid, type, msg)
+    msg = string.lower(msg)
+
+    if((msgcontains(msg, 'hi') and (focus == 0)) and getDistanceToCreature(cid) < 4)then
+        if(getPlayerStorageValue(cid, config.storage) <= 0)then
+            selfSay('Witaj ' .. creatureGetName(cid) .. '! Mialbym dla Ciebie drobne zadanie czy zgodzilbys sie je wykonac??')
+            focus = cid
+            talk_start = os.clock()
+        elseif(getPlayerStorageValue(cid, config.storage) == config.count+2)then
+            selfSay('Jestem Ci dozgonnie wdzieczny!')
+        elseif(getPlayerStorageValue(cid, config.storage) == config.count+1)then
+            selfSay('Wreszcie blogi spokoj dziekuje Ci bardzo oto twa nagroda!')
+            setPlayerStorageValue(cid, config.storage, config.count+2)
+            -- BLOK NAGROD
+        end
+    elseif(msgcontains(msg, 'hi') and (focus ~= cid) and getDistanceToCreature(cid) < 4)then
+        selfSay('Przepraszam, ' .. creatureGetName(cid) .. '! Teraz rozmawiam z kims innym.')
+    elseif focus == cid then
+        talk_start = os.clock()
+        if(msgcontains(msg, 'yes'))then
+            selfSay('Oh to dobrze od kilku dni neka mnie ' .. config.count .. ' potwotow ktore zwa ' .. config.name .. ' pozbadz sie ich a nagroda Cie nie minie.')
+            setPlayerStorageValue(cid, config.storage, 1)
+            focus = 0
+            talk_start = 0
+        elseif(msgcontains(msg, 'no'))then
+            selfSay('Trodno jakos sobie poradze. Zegnaj.')
+            focus = 0
+            talk_start = 0
+        elseif msgcontains(msg, 'bye') and getDistanceToCreature(cid) < 4 then
+            selfSay('Bywaj, ' .. creatureGetName(cid) .. '!')
+            focus = 0
+            talk_start = 0
+        end
+    end
+end
+
+function onCreatureChangeOutfit(creature) end
+
+function onThink()
+    if (os.clock() - talk_start) > 30 then
+        if focus > 0 then
+            selfSay('Next Please...')
+        end
+            focus = 0
+    end
+    if focus ~= 0 then
+        if getDistanceToCreature(focus) > 5 then
+            selfSay('Good bye then.')
+            focus = 0
+        end
+    end
+end
+
+
+Tablic¹ konfiguracyjn¹ (local config) rz¹dz¹ takie same prawa jak plikiem tasks.xml no to teraz tyle
