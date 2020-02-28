@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<npc name="Orlan" script="data/npc/scripts/promote.lua" access="3">
+<look type="131" head="79" body="79" legs="79" feet="79"/>
+<voices>
+<voice ticks="5000" chance="50" isYell="1" text="PROOMOOOCJEE, PROMOOCJE SPRZEDAJE!"/>
+<voice ticks="8000" chance="25" isYell="1" text="U mnie najtaniej "/>
+</voices>
+</npc>
